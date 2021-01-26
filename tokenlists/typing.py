@@ -1,6 +1,7 @@
 from typing import Dict, Iterator, List, NewType, Optional
 
 from datetime import datetime as DateTime
+from copy import deepcopy
 from eth_typing import ChecksumAddress
 from semantic_version import Version  # type: ignore
 
@@ -29,6 +30,7 @@ class TokenInfo:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenInfo":
+        data = deepcopy(data)
         return TokenInfo(**data)
 
     def to_dict(self) -> Dict:
@@ -74,6 +76,7 @@ class TokenList:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenList":
+        data = deepcopy(data)
         data["version"] = ListVersion(**data["version"])
         data["tokens"] = [TokenInfo.from_dict(t) for t in data["tokens"]]
         return TokenList(**data)
