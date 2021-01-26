@@ -4,7 +4,13 @@
 from setuptools import setup, find_packages  # type: ignore
 
 extras_require = {
-    "test": ["pytest==5.4.1", "pytest-xdist", "pytest-coverage"],
+    "test": [
+        "pytest==5.4.1",
+        "pytest-xdist",
+        "pytest-coverage",
+        "hypothesis<6.0",
+        "hypothesis-jsonschema==0.19.0",
+    ],
     "lint": [
         "black==20.8b1",
         "flake8==3.8.4",
