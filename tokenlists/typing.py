@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, List, NewType, Optional
+from typing import Dict, Iterator, List, NewType, Optional, Union
 
 from datetime import datetime as DateTime
 from copy import deepcopy
@@ -27,6 +27,7 @@ class TokenInfo:
     symbol: TokenSymbol
     logoURI: Optional[URI] = URI("")
     tags: Optional[List[TagId]] = None
+    extensions: Dict[str, Union[str, int, bool]] = None
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenInfo":
@@ -39,6 +40,8 @@ class TokenInfo:
             del data["logoURI"]
         if self.tags is None:
             del data["tags"]
+        if self.extensions is None:
+            del data["extensions"]
         return data
 
 
