@@ -37,7 +37,7 @@ class TokenInfo:
         data = dc.asdict(self)
         if self.logoURI == "":
             del data["logoURI"]
-        if not self.tags or len(self.tags) == 0:
+        if self.tags is None:
             del data["tags"]
         return data
 
@@ -84,9 +84,9 @@ class TokenList:
     def to_dict(self) -> Dict:
         data = dc.asdict(self)
         data["tokens"] = [t.to_dict() for t in self.tokens]
-        if not self.keywords or len(self.keywords) == 0:
+        if self.keywords is None:
             del data["keywords"]
-        if not self.tags or len(self.tags) == 0:
+        if self.tags is None:
             del data["tags"]
         if self.logoURI == "":
             del data["logoURI"]
