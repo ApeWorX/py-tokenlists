@@ -44,7 +44,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/iamdefinitelyahuman/py-tokenlists",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    install_requires=["eth-typing>=2.2,<3.0", "semantic-version>=2.8.5,<3"],
+    install_requires=["semantic-version>=2.8.5,<3"],
     extras_require=extras_require,
     classifiers=[
         "Development Status :: 3 - Alpha",
