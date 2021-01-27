@@ -74,7 +74,7 @@ def get_token_list(token_list_name: str = "") -> TokenList:
 def get_token_info(
     symbol: TokenSymbol,
     token_list_name: str = "",
-    chain_id: ChainId = ChainId(1),
+    chain_id: ChainId = 1,
 ) -> TokenInfo:
     token_list = get_token_list(token_list_name)
 

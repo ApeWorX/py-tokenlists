@@ -1,21 +1,20 @@
-from typing import Dict, Iterator, List, NewType, Optional, Union
+from typing import Dict, Iterator, List, Optional, Union
 
 from datetime import datetime as DateTime
 from copy import deepcopy
-from eth_typing import ChecksumAddress
 from semantic_version import Version  # type: ignore
 
 import dataclasses as dc
 
-ChainId = NewType("ChainId", int)
+ChainId = int
 
-TagId = NewType("TagId", str)
-URI = NewType("URI", str)
+TagId = str
+URI = str
 
-TokenAddress = ChecksumAddress
-TokenName = NewType("TokenName", str)
-TokenDecimals = NewType("TokenDecimals", int)
-TokenSymbol = NewType("TokenSymbol", str)
+TokenAddress = str
+TokenName = str
+TokenDecimals = int
+TokenSymbol = str
 
 
 @dc.dataclass(frozen=True)
@@ -25,9 +24,9 @@ class TokenInfo:
     name: TokenName
     decimals: TokenDecimals
     symbol: TokenSymbol
-    logoURI: Optional[URI] = URI("")
+    logoURI: Optional[str] = None
     tags: Optional[List[TagId]] = None
-    extensions: Dict[str, Union[str, int, bool]] = None
+    extensions: Optional[Dict[str, Union[str, int, bool]]] = None
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenInfo":
@@ -36,7 +35,7 @@ class TokenInfo:
 
     def to_dict(self) -> Dict:
         data = dc.asdict(self)
-        if self.logoURI == "":
+        if self.logoURI is None:
             del data["logoURI"]
         if self.tags is None:
             del data["tags"]
@@ -51,13 +50,6 @@ class Timestamp(DateTime):
 
 
 @dc.dataclass(frozen=True)
-class ListVersion(Version):
-    major: int
-    minor: int
-    patch: int
-
-
-@dc.dataclass(frozen=True)
 class Tag:
     name: str
     description: str
@@ -67,7 +59,7 @@ class Tag:
 class TokenList:
     name: str
     timestamp: Timestamp
-    version: ListVersion
+    version: Version
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
     tags: Optional[Dict[TagId, Tag]] = None
@@ -80,12 +72,17 @@ class TokenList:
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenList":
         data = deepcopy(data)
-        data["version"] = ListVersion(**data["version"])
+        data["version"] = Version(**data["version"])
         data["tokens"] = [TokenInfo.from_dict(t) for t in data["tokens"]]
         return TokenList(**data)
 
     def to_dict(self) -> Dict:
         data = dc.asdict(self)
+        data["version"] = {
+            "major": self.version.major,
+            "minor": self.version.minor,
+            "patch": self.version.patch,
+        }
         data["tokens"] = [t.to_dict() for t in self.tokens]
         if self.keywords is None:
             del data["keywords"]
