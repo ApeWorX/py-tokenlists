@@ -50,10 +50,10 @@ def get_token(symbol: str, token_list: str = None) -> Contract:
         if symbol == i["symbol"].lower() and i["chainId"] == chain.id
     ]
     if not data:
-        raise ValueError(f"Symbol does not exist within '{token_list}' token list.")
+        raise ValueError(f"Symbol '{symbol}' does not exist within '{token_list}' token list.")
     if len(data) > 1:
         raise ValueError(
-            f"Multiple tokens within '{token_list}' token list using this symbol."
+            f"Multiple tokens within '{token_list}' token list using the '{symbol}' symbol."
         )
     address = data[0]["address"]
     try:
