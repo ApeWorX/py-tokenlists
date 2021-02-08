@@ -1,3 +1,5 @@
+import pytest
+
 import requests
 
 from hypothesis import given, settings, HealthCheck
@@ -8,6 +10,7 @@ from tokenlists import TokenList
 TOKENLISTS_SCHEMA = "https://uniswap.org/tokenlist.schema.json"
 
 
+@pytest.mark.fuzzing
 @given(token_list=from_schema(requests.get(TOKENLISTS_SCHEMA).json()))
 @settings(suppress_health_check=(HealthCheck.too_slow,))
 def test_schema(token_list):
