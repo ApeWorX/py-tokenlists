@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages  # type: ignore
+from setuptools import find_packages, setup  # type: ignore
 
 extras_require = {
     "test": [

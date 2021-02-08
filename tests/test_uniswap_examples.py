@@ -1,8 +1,8 @@
 import os
-import requests
 
 import github
 import pytest  # type: ignore
+import requests
 
 from tokenlists import TokenList
 

@@ -23,6 +23,12 @@ jobs:
         - name: Run Black
           run: black --check .
 
+        - name: Run isort
+          run: isort --check-only --diff ./tokenlists ./tests ./setup.py
+
+        - name: Run flake8
+          run: flake8 ./tokenlists ./tests ./setup.py
+
     functional:
         runs-on: ubuntu-latest
 

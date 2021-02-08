@@ -1,8 +1,6 @@
 import pytest
-
 import requests
-
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis_jsonschema import from_schema
 
 from tokenlists import TokenList

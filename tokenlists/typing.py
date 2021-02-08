@@ -1,10 +1,9 @@
+import dataclasses as dc
+from copy import deepcopy
+from datetime import datetime as DateTime
 from typing import Dict, Iterator, List, Optional, Union
 
-from datetime import datetime as DateTime
-from copy import deepcopy
 from semantic_version import Version  # type: ignore
-
-import dataclasses as dc
 
 ChainId = int
 
