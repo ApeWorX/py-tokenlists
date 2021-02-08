@@ -50,7 +50,6 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Build Tools",
@@ -58,5 +57,5 @@ setup(
         "Operating System :: OS Independent",
         "Natural Language :: English",
     ],
-    python_requires=">=3.6,<4",
+    python_requires=">=3.7,<4",
 )
