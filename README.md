@@ -1,21 +1,12 @@
 # py-tokenlists
 
-Basic support for [Uniswap Token Lists](https://github.com/Uniswap/token-lists) in Brownie.
+[Uniswap Token Lists](https://github.com/Uniswap/token-lists) implementation in Python.
 
 ## Dependencies
 
 * [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
-* [brownie](https://github.com/eth-brownie/brownie) version [1.13.0](https://github.com/eth-brownie/brownie/releases/tag/v1.13.0) or greater
 
 ## Installation
-
-### via `pipx`
-
-If you have installed Brownie using [`pipx`](https://github.com/pipxproject/pipx), you need to add `tokenlists` into the same virtual environment:
-
-```bash
-pipx inject eth-brownie tokenlists
-```
 
 ### via `pip`
 
@@ -30,7 +21,7 @@ pip install tokenlists
 You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
-git clone https://github.com/iamdefinitelyahuman/py-tokenlists.git
+git clone https://github.com/ApeWorX/py-tokenlists.git
 cd py-tokenlists
 python3 setup.py install
 ```
