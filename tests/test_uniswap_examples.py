@@ -7,13 +7,9 @@ import pytest  # type: ignore
 from tokenlists import TokenList
 
 # NOTE: Must export GITHUB_ACCESS_TOKEN
-UNISWAP_REPO = github.Github(os.environ["GITHUB_ACCESS_TOKEN"]).get_repo(
-    "Uniswap/token-lists"
-)
+UNISWAP_REPO = github.Github(os.environ["GITHUB_ACCESS_TOKEN"]).get_repo("Uniswap/token-lists")
 
-UNISWAP_RAW_URL = (
-    "https://raw.githubusercontent.com/Uniswap/token-lists/master/test/schema/"
-)
+UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/test/schema/"
 
 
 @pytest.mark.parametrize(

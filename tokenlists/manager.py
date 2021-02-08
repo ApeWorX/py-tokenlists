@@ -86,14 +86,12 @@ def get_token_info(
 
     if len(matching_tokens) == 0:
         raise ValueError(
-            f"Token with symbol '{symbol}' does not exist"
-            f" within '{token_list}' token list."
+            f"Token with symbol '{symbol}' does not exist" f" within '{token_list}' token list."
         )
 
     elif len(matching_tokens) > 1:
         raise ValueError(
-            f"Multiple tokens with symbol '{symbol}'"
-            f" found in '{token_list}' token list."
+            f"Multiple tokens with symbol '{symbol}'" f" found in '{token_list}' token list."
         )
 
     else:
