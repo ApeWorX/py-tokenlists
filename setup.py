@@ -36,7 +36,7 @@ with open("README.md", "r") as fp:
 
 setup(
     name="tokenlists",
-    version="0.0.0-alpha0",
+    version="0.1.0-alpha.1",
     author="Ben Hauser",
     author_email="ben@hauser.id",
     description="",
