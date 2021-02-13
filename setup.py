@@ -42,7 +42,7 @@ setup(
     description="",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/iamdefinitelyahuman/py-tokenlists",
+    url="https://github.com/ApeWorX/py-tokenlists",
     packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=["semantic-version>=2.8.5,<3"],
     extras_require=extras_require,
