@@ -44,6 +44,16 @@ def uninstall_token_list(token_list_name: str = "") -> None:
     del INSTALLED_TOKEN_LISTS[token_list.name]
 
 
+def default_token_list() -> str:
+    _load_token_lists()
+    if config.DEFAULT_TOKEN_LIST:
+        return config.DEFAULT_TOKEN_LIST
+    elif len(INSTALLED_TOKEN_LISTS) == 0:
+        raise ValueError("No tokenlists installed!")
+    else:
+        return list(INSTALLED_TOKEN_LISTS)[0]  # just return the first
+
+
 def set_default_token_list(name: str) -> None:
     _load_token_lists()
     if name not in INSTALLED_TOKEN_LISTS:
