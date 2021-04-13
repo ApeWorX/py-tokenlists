@@ -44,7 +44,8 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ApeWorX/py-tokenlists",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    install_requires=["semantic-version>=2.8.5,<3"],
+    install_requires=["semantic-version>=2.8.5,<3", "pyyaml>=5.4.1,<6"],
+    entry_points={"console_scripts": ["tokenlists=tokenlists._cli:cli"]},
     extras_require=extras_require,
     classifiers=[
         "Development Status :: 3 - Alpha",
