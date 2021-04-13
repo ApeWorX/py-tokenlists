@@ -17,16 +17,15 @@ extras_require = {
         "flake8==3.8.4",
         "isort>=5.7.0,<6",
         "mypy==0.790",
-        "pydocstyle>=5.1.1,<6",
     ],
     "doc": ["Sphinx>=3.4.3,<4", "sphinx_rtd_theme>=0.5.1"],
-    "dev": ["pytest-watch>=4.2.0,<5", "wheel", "twine", "ipython"],
     "release": [
         "setuptools",
         "setuptools-scm",
         "wheel",
         "twine",
     ],
+    "dev": ["pytest-watch", "IPython", "ipdb"],
 }
 
 extras_require["dev"] = (
