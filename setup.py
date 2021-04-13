@@ -7,7 +7,7 @@ extras_require = {
     "test": [
         "pytest==5.4.1",
         "pytest-xdist",
-        "pytest-coverage",
+        "pytest-cov",
         "PyGithub>=1.54,<2.0",
         "hypothesis<6.0",
         "hypothesis-jsonschema==0.19.0",
