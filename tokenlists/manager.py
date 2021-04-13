@@ -80,7 +80,7 @@ def get_token_info(
     matching_tokens = [
         token
         for token in token_list.tokens
-        if (token.symbol == symbol and token.chainId == chain_id)
+        if (token.symbol.lower() == symbol.lower() and token.chainId == chain_id)
     ]
 
     if len(matching_tokens) == 0:
