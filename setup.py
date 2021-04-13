@@ -21,13 +21,20 @@ extras_require = {
     ],
     "doc": ["Sphinx>=3.4.3,<4", "sphinx_rtd_theme>=0.5.1"],
     "dev": ["pytest-watch>=4.2.0,<5", "wheel", "twine", "ipython"],
+    "release": [
+        "setuptools",
+        "setuptools-scm",
+        "wheel",
+        "twine",
+    ],
 }
 
 extras_require["dev"] = (
     extras_require["dev"]
-    + extras_require["test"]  # noqa: W504
-    + extras_require["lint"]  # noqa: W504
-    + extras_require["doc"]  # noqa: W504
+    + extras_require["test"]
+    + extras_require["lint"]
+    + extras_require["release"]
+    + extras_require["doc"]
 )
 
 with open("README.md", "r") as fp:
@@ -36,10 +43,11 @@ with open("README.md", "r") as fp:
 
 setup(
     name="tokenlists",
-    version="0.1.0-alpha.1",
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     author="Ben Hauser",
     author_email="ben@hauser.id",
-    description="",
+    description="Python implementation of Uniswaps' tokenlists",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ApeWorX/py-tokenlists",
