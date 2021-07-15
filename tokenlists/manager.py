@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional
 
-import requests
+import requests  # type: ignore
 from dataclassy import dataclass
 
 from tokenlists import config

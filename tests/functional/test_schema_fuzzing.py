@@ -1,5 +1,5 @@
 import pytest
-import requests
+import requests  # type: ignore
 from hypothesis import HealthCheck, given, settings
 from hypothesis_jsonschema import from_schema
 

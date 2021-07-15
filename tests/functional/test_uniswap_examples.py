@@ -2,7 +2,7 @@ import os
 
 import github
 import pytest  # type: ignore
-import requests
+import requests  # type: ignore
 
 from tokenlists import TokenList
 
@@ -14,7 +14,7 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 
 @pytest.mark.parametrize(
     "token_list_file",
-    UNISWAP_REPO.get_contents("test/schema"),
+    UNISWAP_REPO.get_contents("test/schema"),  # type: ignore
 )
 def test_uniswap_tokenlists(token_list_file):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_file.name).json()
