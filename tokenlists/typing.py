@@ -1,8 +1,8 @@
-import dataclasses as dc
 from copy import deepcopy
 from datetime import datetime as DateTime
 from typing import Dict, Iterator, List, Optional, Union
 
+import dataclassy as dc
 from semantic_version import Version  # type: ignore
 
 ChainId = int
@@ -16,7 +16,7 @@ TokenDecimals = int
 TokenSymbol = str
 
 
-@dc.dataclass(frozen=True)
+@dc.dataclass(frozen=True, slots=True)
 class TokenInfo:
     chainId: ChainId
     address: TokenAddress
@@ -30,7 +30,7 @@ class TokenInfo:
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenInfo":
         data = deepcopy(data)
-        return TokenInfo(**data)
+        return cls(**data)  # type: ignore
 
     def to_dict(self) -> Dict:
         data = dc.asdict(self)
@@ -48,13 +48,14 @@ class Timestamp(DateTime):
         super().fromisoformat(timestamp)
 
 
-@dc.dataclass(frozen=True)
+@dc.dataclass(frozen=True, slots=True)
 class Tag:
     name: str
     description: str
 
 
-@dc.dataclass
+# NOTE: Not frozen as we may need to dynamically modify this
+@dc.dataclass(slots=True)
 class TokenList:
     name: str
     timestamp: Timestamp
@@ -62,18 +63,17 @@ class TokenList:
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
     tags: Optional[Dict[TagId, Tag]] = None
-    logoURI: Optional[URI] = URI("")
+    logoURI: Optional[URI] = None
 
     def __iter__(self) -> Iterator[TokenInfo]:
-        for token_info in self.tokens:
-            yield token_info
+        return iter(self.tokens)
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TokenList":
         data = deepcopy(data)
         data["version"] = Version(**data["version"])
         data["tokens"] = [TokenInfo.from_dict(t) for t in data["tokens"]]
-        return TokenList(**data)
+        return cls(**data)  # type: ignore
 
     def to_dict(self) -> Dict:
         data = dc.asdict(self)
@@ -87,6 +87,6 @@ class TokenList:
             del data["keywords"]
         if self.tags is None:
             del data["tags"]
-        if self.logoURI == "":
+        if self.logoURI is None or self.logoURI == "":
             del data["logoURI"]
         return data
