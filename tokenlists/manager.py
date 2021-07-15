@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterator, List, Optional
 
 import requests
 from dataclassy import dataclass
@@ -79,6 +79,14 @@ class TokenListManager:
 
         return self.installed_tokenlists[token_listname]
 
+    def get_tokens(
+        self,
+        token_listname: Optional[str] = None,  # Use default
+        chain_id: ChainId = 1,  # Ethereum Mainnnet
+    ) -> Iterator[TokenInfo]:
+        tokenlist = self.get_tokenlist(token_listname)
+        return filter(lambda t: t.chainId == chain_id, iter(tokenlist))
+
     def get_token_info(
         self,
         symbol: TokenSymbol,
@@ -88,17 +96,14 @@ class TokenListManager:
     ) -> TokenInfo:
         tokenlist = self.get_tokenlist(token_listname)
 
-        matching_tokens = [
-            token
-            for token in tokenlist.tokens
-            if (
-                token.symbol == symbol
-                # NOTE: Might have duplicates when case insensitive
-                or (case_insensitive and token.symbol.lower() == symbol.lower())
-            )
-            and token.chainId == chain_id
-        ]
+        token_iter = filter(lambda t: t.chainId == chain_id, iter(tokenlist))
+        token_iter = (
+            filter(lambda t: t.symbol == symbol, token_iter)
+            if case_insensitive
+            else filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
+        )
 
+        matching_tokens = list(token_iter)
         if len(matching_tokens) == 0:
             raise ValueError(
                 f"Token with symbol '{symbol}' does not exist" f" within '{tokenlist}' token list."

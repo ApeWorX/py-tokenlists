@@ -1,5 +1,6 @@
+import re
+
 import click
-import yaml
 
 from .manager import TokenListManager
 from .typing import TokenSymbol
@@ -59,6 +60,25 @@ def set_default(name):
     manager.set_default_tokenlist(name)
 
 
+@cli.command(short_help="Display the names and versions of all installed tokenlists")
+@click.option("--search", default="")
+@click.option("--tokenlist-name", type=TokenlistChoice(), default=None)
+@click.option("--chain-id", default=1, type=int)
+def list_tokens(search, tokenlist_name, chain_id):
+    manager = TokenListManager()
+
+    if not manager.default_tokenlist:
+        raise click.ClickException("No tokenlists available!")
+
+    pattern = re.compile(search or ".*")
+
+    for token_info in filter(
+        lambda t: pattern.match(t.symbol),
+        manager.get_tokens(tokenlist_name, chain_id),
+    ):
+        click.echo("{address} ({symbol})".format(**token_info.to_dict()))
+
+
 @cli.command(short_help="Display the info for a particular token")
 @click.argument("symbol", type=TokenSymbol)
 @click.option("--tokenlist-name", type=TokenlistChoice(), default=None)
@@ -67,11 +87,20 @@ def set_default(name):
 def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
     manager = TokenListManager()
 
-    if not tokenlist_name:
-        if not manager.available_tokenlists():
-            raise click.ClickException("No tokenlists available!")
-
-        tokenlist_name = manager.default_tokenlist
+    if not manager.default_tokenlist:
+        raise click.ClickException("No tokenlists available!")
 
     token_info = manager.get_token_info(symbol, tokenlist_name, chain_id, case_insensitive)
-    click.echo(yaml.dump(token_info.to_dict()))
+
+    click.echo(
+        """
+      Symbol: {symbol}
+        Name: {name}
+    Chain ID: {chainId}
+     Address: {address}
+    Decimals: {decimals}
+        Tags: {tags}
+    """.format(
+            tags=[], **token_info.to_dict()
+        )
+    )
