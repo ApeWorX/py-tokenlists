@@ -1,4 +1,5 @@
 from datetime import datetime
+from itertools import chain
 from typing import Dict, List, Optional
 
 from pydantic import AnyUrl
@@ -113,11 +114,18 @@ class TokenList(BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        all_tags = set(tag for token in self.tokens for tag in (token.tags if token.tags else []))
-        token_ref_tags = set(tag for tag in all_tags if set(tag) < set("0123456789"))
+        # Pull all the tags from all the tokens, reference or not
+        all_tags = chain.from_iterable(
+            list(token.tags) if token.tags else [] for token in self.tokens
+        )
+        # Obtain the set of all enumerated reference tags e.g. "1", "2", etc.
+        token_ref_tags = set(tag for tag in set(all_tags) if set(tag) < set("0123456789"))
 
+        # Compare the enumerated reference tags from the tokens to the tag set in this class
         tokenlist_tags = set(iter(self.tags)) if self.tags else set()
         if token_ref_tags > tokenlist_tags:
+            # We have an enumerated reference tag used by a token
+            # missing from the our set of tags here
             raise ValueError(
                 f"Missing reference tags in tokenlist: {token_ref_tags - tokenlist_tags}"
             )
