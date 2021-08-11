@@ -25,12 +25,11 @@ extras_require = {
     ],
     "release": [  # `release` GitHub Action job uses this
         "setuptools",  # Installation tool
-        "setuptools-scm",  # Installation tool
         "wheel",  # Packaging tool
         "twine",  # Package upload tool
     ],
     "dev": [
-        "commitizen",  # Manage commits and publishing releases
+        "commitizen",  # Manage commits and publishing releases,
         "pre-commit",  # Ensure that linters are run prior to commiting
         "pytest-watch",  # `ptw` test watcher/runner
         "IPython",  # Console for interacting
