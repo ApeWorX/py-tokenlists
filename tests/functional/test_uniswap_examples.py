@@ -18,4 +18,4 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 )
 def test_uniswap_tokenlists(token_list_file):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_file.name).json()
-    assert TokenList.from_dict(token_list).to_dict() == token_list
+    assert TokenList.parse_obj(token_list).dict() == token_list
