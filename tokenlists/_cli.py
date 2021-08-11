@@ -60,6 +60,8 @@ def set_default(name):
 
     manager.set_default_tokenlist(name)
 
+    click.echo(f"Default tokenlist is now: '{manager.default_tokenlist}'")
+
 
 @cli.command(short_help="Display the names and versions of all installed tokenlists")
 @click.option("--search", default="")
