@@ -1,4 +1,12 @@
+from tokenlists.version import version
+
 TEST_URI = "tokens.1inch.eth"
+
+
+def test_version(runner, cli):
+    result = runner.invoke(cli, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == version
 
 
 def test_empty_list(runner, cli):

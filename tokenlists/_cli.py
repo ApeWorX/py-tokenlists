@@ -16,6 +16,7 @@ class TokenlistChoice(click.Choice):
 
 
 @click.group()
+@click.version_option(message="%(version)s", package_name="tokenlists")
 def cli():
     """
     Utility for working with the `py-tokenlists` installed token lists
