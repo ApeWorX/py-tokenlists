@@ -1,28 +1,24 @@
-from pathlib import Path
-from typing import Dict, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
 import requests  # type: ignore
-from pydantic import BaseModel
 
 from tokenlists import config
 from tokenlists.typing import ChainId, TokenInfo, TokenList, TokenSymbol
 
 
-class TokenListManager(BaseModel):
-    cache_folder: Path = config.DEFAULT_CACHE_PATH
-    installed_tokenlists: Dict[str, TokenList] = {}
-    default_tokenlist: Optional[str] = config.DEFAULT_TOKENLIST
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class TokenListManager:
+    def __init__(self):
         # NOTE: Folder should always exist, even if empty
+        self.cache_folder = config.DEFAULT_CACHE_PATH
         self.cache_folder.mkdir(exist_ok=True)
 
         # Load all the ones cached on disk
+        self.installed_tokenlists = {}
         for path in self.cache_folder.glob("*.json"):
             tokenlist = TokenList.parse_file(path)
             self.installed_tokenlists[tokenlist.name] = tokenlist
 
+        self.default_tokenlist = config.DEFAULT_TOKENLIST
         if not self.default_tokenlist:
             # Default might be cached on disk (does not override config)
             default_tokenlist_cachefile = self.cache_folder.joinpath(".default")
