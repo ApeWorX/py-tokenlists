@@ -63,7 +63,7 @@ setup(
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
         "click>=8.0.0",
-        "dataclassy>=0.10.3,<1.0",
+        "pydantic>=1.8.2,<2.0.0",
         "pyyaml>=5.4.1,<6",
         "semantic-version>=2.8.5,<3",
     ],

@@ -16,6 +16,7 @@ class TokenlistChoice(click.Choice):
 
 
 @click.group()
+@click.version_option(message="%(version)s", package_name="tokenlists")
 def cli():
     """
     Utility for working with the `py-tokenlists` installed token lists
@@ -59,6 +60,8 @@ def set_default(name):
 
     manager.set_default_tokenlist(name)
 
+    click.echo(f"Default tokenlist is now: '{manager.default_tokenlist}'")
+
 
 @cli.command(short_help="Display the names and versions of all installed tokenlists")
 @click.option("--search", default="")
@@ -76,7 +79,7 @@ def list_tokens(search, tokenlist_name, chain_id):
         lambda t: pattern.match(t.symbol),
         manager.get_tokens(tokenlist_name, chain_id),
     ):
-        click.echo("{address} ({symbol})".format(**token_info.to_dict()))
+        click.echo("{address} ({symbol})".format(**token_info.dict()))
 
 
 @cli.command(short_help="Display the info for a particular token")
@@ -91,6 +94,10 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
         raise click.ClickException("No tokenlists available!")
 
     token_info = manager.get_token_info(symbol, tokenlist_name, chain_id, case_insensitive)
+    token_info = token_info.dict()
+
+    if "tags" not in token_info:
+        token_info["tags"] = ""
 
     click.echo(
         """
@@ -101,6 +108,6 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
     Decimals: {decimals}
         Tags: {tags}
     """.format(
-            tags=[], **token_info.to_dict()
+            **token_info
         )
     )
