@@ -64,7 +64,7 @@ class TokenInfo(BaseModel):
         # `extensions` is `Dict[str, Union[str, int, bool, None]]`, but pydantic mutates entries
         for val in d.values():
             if not isinstance(val, (str, int, bool)) and val is not None:
-                raise ValueError("")
+                raise ValueError(f"Incorrect extension field value: {val}")
 
         return d
 
