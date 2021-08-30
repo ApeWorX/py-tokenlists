@@ -30,7 +30,11 @@ class TokenListManager:
                 # Not cached on disk, use first installed list
                 self.default_tokenlist = next(iter(self.installed_tokenlists))
 
-    def install_tokenlist(self, uri: str):
+    def install_tokenlist(self, uri: str) -> str:
+        """
+        Install the tokenlist at the given URI, return the name of the installed list
+        (for reference purposes)
+        """
         # This supports ENS lists
         if uri.endswith(".eth"):
             uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri)
@@ -43,6 +47,8 @@ class TokenListManager:
         self.cache_folder.mkdir(exist_ok=True)
         token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
         token_list_file.write_text(tokenlist.json())
+
+        return tokenlist.name
 
     def remove_tokenlist(self, tokenlist_name: str) -> None:
         tokenlist = self.installed_tokenlists[tokenlist_name]
