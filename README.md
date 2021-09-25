@@ -28,7 +28,17 @@ python3 setup.py install
 
 ## Quick Usage
 
-TODO
+```python
+>>> from tokenlists import TokenListManager
+>>> tlm = TokenListManager()
+
+>>> tlm.available_tokenlists()
+[]
+
+>>> tlm.install_tokenlist("tokens.1inch.eth")
+>>> tlm.available_tokenlists()
+['1inch']
+```
 
 ## Development
 
