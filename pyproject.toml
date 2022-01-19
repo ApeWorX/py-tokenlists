@@ -1,6 +1,9 @@
  [build-system]
 requires = ["setuptools>=51.1.1", "wheel", "setuptools_scm[toml]>=5.0"]
 
+[tool.mypy]
+exclude = "build/"
+
 [tool.setuptools_scm]
 write_to = "tokenlists/version.py"
 
@@ -11,28 +14,13 @@ write_to = "tokenlists/version.py"
 
 [tool.black]
 line-length = 100
-target-version = ['py37', 'py38']
+target-version = ['py37', 'py38', 'py39']
 include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | env
-  | venv
-)/
-'''
 
 [tool.pytest.ini_options]
 addopts = """
     -n auto
+    -p no:ape_test
 	--cov-branch
 	--cov-report term
 	--cov-report html
