@@ -40,7 +40,9 @@ class TokenListManager:
             uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri)
 
         # Load and store the tokenlist
-        tokenlist = TokenList.parse_obj(requests.get(uri).json())
+        response = requests.get(uri)
+        response.raise_for_status()
+        tokenlist = TokenList.parse_obj(response.json())
         self.installed_tokenlists[tokenlist.name] = tokenlist
 
         # Cache it on disk for later instances
