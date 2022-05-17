@@ -1,6 +1,6 @@
 from datetime import datetime
 from itertools import chain
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import AnyUrl
 from pydantic import BaseModel as _BaseModel
@@ -28,6 +28,23 @@ class BaseModel(_BaseModel):
         froze = True
 
 
+class BridgeInfoItem(BaseModel):
+    tokenAddress: TokenAddress
+    originBridgeAddress: TokenAddress
+    destBridgeAddress: TokenAddress
+
+
+class BridgeInfo(BaseModel):
+    __root__: Dict[str, BridgeInfoItem]
+
+    @validator("__root__")
+    def validate_keys_are_chainIds(cls, v):
+        for chain_id in v:
+            int(chain_id)
+
+        return v
+
+
 class TokenInfo(BaseModel):
     chainId: ChainId
     address: TokenAddress
@@ -36,7 +53,34 @@ class TokenInfo(BaseModel):
     symbol: TokenSymbol
     logoURI: Optional[AnyUrl] = None
     tags: Optional[List[TagId]] = None
-    extensions: Optional[dict] = None
+    extensions: Optional[Dict[str, Any]] = None
+
+    @validator("extensions")
+    def parse_extensions(cls, v: dict):
+        if "bridgeInfo" in v:
+            v["bridgeInfo"] = BridgeInfo.parse_obj(v.pop("bridgeInfo"))
+
+        return v
+
+    @validator("extensions")
+    def check_extension_depth(cls, v: dict):
+        def extension_depth(obj: dict) -> int:
+            depth = 0
+            for v in obj.values():
+                if isinstance(v, dict):
+                    depth = max(depth, extension_depth(v))
+
+            return depth + 1
+
+        assert extension_depth(v) < 3
+        return v
+
+    @property
+    def bridge_info(self) -> Optional[BridgeInfo]:
+        if self.extensions and "bridgeInfo" in self.extensions:
+            return self.extensions["bridgeInfo"]  # type: ignore
+
+        return None
 
     @validator("address")
     def address_must_hex(cls, v: str):
@@ -63,7 +107,10 @@ class TokenInfo(BaseModel):
             return d
 
         # `extensions` is `Dict[str, Union[str, int, bool, None]]`, but pydantic mutates entries
-        for val in d.values():
+        for key, val in d.items():
+            if key in "bridgeInfo":
+                continue  # don't parse valid extensions
+
             if not isinstance(val, (str, int, bool)) and val is not None:
                 raise ValueError(f"Incorrect extension field value: {val}")
 
