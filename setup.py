@@ -59,7 +59,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ApeWorX/py-tokenlists",
     include_package_data=True,
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7.2,<3.11",
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
         "click>=8.0.0",
@@ -83,9 +83,9 @@ setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
 )
