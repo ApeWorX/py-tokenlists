@@ -13,10 +13,10 @@ extras_require = {
         "hypothesis-jsonschema==0.19.0",  # Fuzzes based on a json schema
     ],
     "lint": [
-        "black>=21.10b0,<22.0",  # auto-formatter and linter
-        "mypy>=0.910,<1.0",  # Static type analyzer
-        "flake8>=3.9.2,<4.0",  # Style linter
-        "isort>=5.9.3,<6.0",  # Import sorting linter
+        "black>=22.3.0,<23.0",  # auto-formatter and linter
+        "mypy>=0.950,<1.0",  # Static type analyzer
+        "flake8>=4.0.1,<5.0",  # Style linter
+        "isort>=5.10.1,<6.0",  # Import sorting linter
     ],
     "doc": [
         "Sphinx>=3.4.3,<4",  # Documentation generator
@@ -59,13 +59,13 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ApeWorX/py-tokenlists",
     include_package_data=True,
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7.2,<3.11",
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "click>=8.0.0",
-        "pydantic>=1.8.2,<2.0.0",
-        "pyyaml>=5.4.1,<6",
-        "semantic-version>=2.8.5,<3",
+        "click>=8.0.1",
+        "pydantic>=1.9.0,<2.0.0",
+        "pyyaml>=6.0,<7.0",
+        "semantic-version>=2.9.0,<3",
     ],
     entry_points={"console_scripts": ["tokenlists=tokenlists._cli:cli"]},
     extras_require=extras_require,
@@ -83,9 +83,9 @@ setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
 )
