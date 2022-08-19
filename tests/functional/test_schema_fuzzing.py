@@ -1,5 +1,5 @@
 import pytest
-import requests  # type: ignore
+import requests
 from hypothesis import HealthCheck, given, settings
 from hypothesis_jsonschema import from_schema
 from pydantic import ValidationError

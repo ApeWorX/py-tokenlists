@@ -1,6 +1,6 @@
 from typing import Iterator, List, Optional
 
-import requests  # type: ignore
+import requests
 
 from tokenlists import config
 from tokenlists.typing import ChainId, TokenInfo, TokenList, TokenSymbol

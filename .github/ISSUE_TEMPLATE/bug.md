@@ -6,7 +6,7 @@ labels: 'bug'
 ### Environment information
 
 * Python Version: x.x.x
-* OS: osx/linux/win
+* OS: macOS/linux/win
 
 Python environment
 

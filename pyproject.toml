@@ -1,4 +1,4 @@
- [build-system]
+[build-system]
 requires = ["setuptools>=51.1.1", "wheel", "setuptools_scm[toml]>=5.0"]
 
 [tool.mypy]
@@ -36,7 +36,5 @@ markers = "fuzzing: Run Hypothesis fuzz test suite"
 line_length = 100
 force_grid_wrap = 0
 include_trailing_comma = true
-known_third_party = ["click", "github", "hypothesis", "hypothesis_jsonschema", "pydantic", "pytest", "requests", "semantic_version", "setuptools"]
-known_first_party = ["tokenlists"]
 multi_line_output = 3
 use_parentheses = true
