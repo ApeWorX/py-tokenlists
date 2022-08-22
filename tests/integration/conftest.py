@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import pytest  # type: ignore
+import pytest
 from click.testing import CliRunner
 
 from tokenlists import _cli, config

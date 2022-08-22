@@ -4,7 +4,7 @@
 
 ## Dependencies
 
-* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
+* [python3](https://www.python.org/downloads/release/python-368/) version 3.7.2 or greater, python3-dev
 
 ## Installation
 
@@ -42,7 +42,9 @@ python3 setup.py install
 
 ## Development
 
-This project is in early development and should be considered an alpha. Things might not work, breaking changes are likely. Comments, questions, criticisms and pull requests are welcomed.
+This project is in early development and should be considered an alpha.
+Things might not work, breaking changes are likely.
+Comments, questions, criticisms and pull requests are welcomed.
 
 ## License
 

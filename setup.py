@@ -5,18 +5,19 @@ from setuptools import find_packages, setup  # type: ignore
 
 extras_require = {
     "test": [  # `test` GitHub Action jobs uses this
-        "pytest>=6.0,<7.0",  # Core testing package
+        "pytest>=6.0",  # Core testing package
         "pytest-xdist",  # multi-process runner
         "pytest-cov",  # Coverage analyzer plugin
-        "hypothesis>=6.2.0,<7.0",  # Strategy-based fuzzer
-        "PyGithub>=1.54,<2.0",  # Necessary to pull official schema from github
+        "hypothesis>=6.2.0,<7",  # Strategy-based fuzzer
+        "PyGithub>=1.54,<2",  # Necessary to pull official schema from github
         "hypothesis-jsonschema==0.19.0",  # Fuzzes based on a json schema
     ],
     "lint": [
-        "black>=22.3.0,<23.0",  # auto-formatter and linter
-        "mypy>=0.950,<1.0",  # Static type analyzer
-        "flake8>=4.0.1,<5.0",  # Style linter
-        "isort>=5.10.1,<6.0",  # Import sorting linter
+        "black>=22.6.0,<23",  # auto-formatter and linter
+        "mypy>=0.971,<1",  # Static type analyzer
+        "types-requests",  # Needed due to mypy typeshed
+        "flake8>=4.0.1,<5",  # Style linter
+        "isort>=5.10.1,<6",  # Import sorting linter
     ],
     "doc": [
         "Sphinx>=3.4.3,<4",  # Documentation generator
@@ -48,6 +49,7 @@ extras_require["dev"] = (
 with open("./README.md") as readme:
     long_description = readme.read()
 
+
 setup(
     name="tokenlists",
     use_scm_version=True,
@@ -62,10 +64,11 @@ setup(
     python_requires=">=3.7.2,<3.11",
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "click>=8.0.1",
-        "pydantic>=1.9.0,<2.0.0",
-        "pyyaml>=6.0,<7.0",
-        "semantic-version>=2.9.0,<3",
+        "click>=8.1.3,<9",
+        "pydantic>=1.9.2,<2",
+        "pyyaml>=6.0,<7",
+        "semantic-version>=2.10.0,<3",
+        "requests>=2.28.1,<3",
     ],
     entry_points={"console_scripts": ["tokenlists=tokenlists._cli:cli"]},
     extras_require=extras_require,

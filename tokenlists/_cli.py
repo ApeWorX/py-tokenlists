@@ -15,7 +15,7 @@ class TokenlistChoice(click.Choice):
         return list(TokenListManager().available_tokenlists())
 
 
-@click.group()
+@click.group(short_help="Work with token lists")
 @click.version_option(message="%(version)s", package_name="tokenlists")
 def cli():
     """
@@ -41,7 +41,6 @@ def _list():
 @click.argument("uri")
 def install(uri):
     manager = TokenListManager()
-
     manager.install_tokenlist(uri)
 
 
@@ -49,7 +48,6 @@ def install(uri):
 @click.argument("name", type=TokenlistChoice())
 def remove(name):
     manager = TokenListManager()
-
     manager.remove_tokenlist(name)
 
 
@@ -57,9 +55,7 @@ def remove(name):
 @click.argument("name", type=TokenlistChoice())
 def set_default(name):
     manager = TokenListManager()
-
     manager.set_default_tokenlist(name)
-
     click.echo(f"Default tokenlist is now: '{manager.default_tokenlist}'")
 
 
