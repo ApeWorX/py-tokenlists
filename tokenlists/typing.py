@@ -30,8 +30,8 @@ class BaseModel(_BaseModel):
 
 class BridgeInfoItem(BaseModel):
     tokenAddress: TokenAddress
-    originBridgeAddress: TokenAddress
-    destBridgeAddress: TokenAddress
+    originBridgeAddress: Optional[TokenAddress] = None
+    destBridgeAddress: Optional[TokenAddress] = None
 
 
 class BridgeInfo(BaseModel):
