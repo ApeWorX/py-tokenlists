@@ -22,6 +22,11 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 def test_uniswap_tokenlists(token_list_name):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_name).json()
 
+    if token_list_name == "example.tokenlist.json":
+        # NOTE: No idea why this breaking change was necessary
+        #       https://github.com/Uniswap/token-lists/pull/420
+        token_list.pop("tokenMap")
+
     if "invalid" not in token_list_name:
         assert TokenList.parse_obj(token_list).dict() == token_list
 
