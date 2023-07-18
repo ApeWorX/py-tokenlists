@@ -22,13 +22,6 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 def test_uniswap_tokenlists(token_list_name):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_name).json()
 
-    if token_list_name in (
-        "example-crosschain.tokenlist.json",
-        "extensions-valid-object.tokenlist.json",
-    ):
-        # TODO: Unskip once can handle object extensions
-        pytest.skip("https://github.com/ApeWorX/py-tokenlists/issues/20")
-
     if "invalid" not in token_list_name:
         assert TokenList.parse_obj(token_list).dict() == token_list
 
