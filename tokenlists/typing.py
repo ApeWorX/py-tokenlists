@@ -51,9 +51,19 @@ class TokenInfo(BaseModel):
     name: TokenName
     decimals: TokenDecimals
     symbol: TokenSymbol
-    logoURI: Optional[AnyUrl] = None
+    logoURI: Optional[str] = None
     tags: Optional[List[TagId]] = None
     extensions: Optional[Dict[str, Any]] = None
+
+    @validator("logoURI")
+    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+
+        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+            raise ValueError(f"'{v}' is not a valid URI")
+
+        return v
 
     @validator("extensions", pre=True)
     def parse_extensions(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -155,7 +165,7 @@ class TokenList(BaseModel):
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
     tags: Optional[Dict[TagId, Tag]] = None
-    logoURI: Optional[AnyUrl] = None
+    logoURI: Optional[str] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -179,6 +189,16 @@ class TokenList(BaseModel):
     class Config:
         # NOTE: Not frozen as we may need to dynamically modify this
         froze = False
+
+    @validator("logoURI")
+    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+
+        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+            raise ValueError(f"'{v}' is not a valid URI")
+
+        return v
 
     def dict(self, *args, **kwargs) -> dict:
         data = super().dict(*args, **kwargs)
