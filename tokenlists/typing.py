@@ -92,9 +92,9 @@ class TokenInfo(BaseModel):
 
         # NOTE: `extensions` is mapping from `str` to either:
         #       - a parsed `dict` type (e.g. `BaseModel`)
-        #       - a "simple" type (e.g. string, integer or boolean value)
+        #       - a "simple" type (e.g. dict, string, integer or boolean value)
         for key, val in d.items():
-            if not isinstance(val, (BaseModel, str, int, bool)) and val is not None:
+            if val is not None and not isinstance(val, (BaseModel, str, int, bool, dict)):
                 raise ValueError(f"Incorrect extension field value: {val}")
 
         return d
