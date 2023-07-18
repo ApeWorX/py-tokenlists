@@ -1,3 +1,5 @@
+# TODO: Seems like Click 8.1.5 introduced this
+# mypy: disable-error-code=attr-defined
 import re
 
 import click
