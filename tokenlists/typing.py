@@ -28,21 +28,10 @@ class BaseModel(_BaseModel):
         froze = True
 
 
-class BridgeInfoItem(BaseModel):
+class BridgeInfo(BaseModel):
     tokenAddress: TokenAddress
     originBridgeAddress: Optional[TokenAddress] = None
     destBridgeAddress: Optional[TokenAddress] = None
-
-
-class BridgeInfo(BaseModel):
-    __root__: Dict[str, BridgeInfoItem]
-
-    @validator("__root__")
-    def validate_keys_are_chainIds(cls, v):
-        for chain_id in v:
-            int(chain_id)
-
-        return v
 
 
 class TokenInfo(BaseModel):
@@ -79,7 +68,8 @@ class TokenInfo(BaseModel):
 
         # 2. Parse valid extensions
         if v and "bridgeInfo" in v:
-            v["bridgeInfo"] = BridgeInfo.parse_obj(v.pop("bridgeInfo"))
+            raw_bridge_info = v.pop("bridgeInfo")
+            v["bridgeInfo"] = {int(k): BridgeInfo.parse_obj(v) for k, v in raw_bridge_info.items()}
 
         return v
 
