@@ -2,7 +2,7 @@ import os
 
 import github
 import pytest
-import requests
+import requests  # type: ignore[import]
 from pydantic import ValidationError
 
 from tokenlists import TokenList
