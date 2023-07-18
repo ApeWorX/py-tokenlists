@@ -1,6 +1,6 @@
 from datetime import datetime
 from itertools import chain
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import AnyUrl
 from pydantic import BaseModel as _BaseModel
@@ -28,15 +28,73 @@ class BaseModel(_BaseModel):
         froze = True
 
 
+class BridgeInfo(BaseModel):
+    tokenAddress: TokenAddress
+    originBridgeAddress: Optional[TokenAddress] = None
+    destBridgeAddress: Optional[TokenAddress] = None
+
+
 class TokenInfo(BaseModel):
     chainId: ChainId
     address: TokenAddress
     name: TokenName
     decimals: TokenDecimals
     symbol: TokenSymbol
-    logoURI: Optional[AnyUrl] = None
+    logoURI: Optional[str] = None
     tags: Optional[List[TagId]] = None
-    extensions: Optional[dict] = None
+    extensions: Optional[Dict[str, Any]] = None
+
+    @validator("logoURI")
+    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+
+        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+            raise ValueError(f"'{v}' is not a valid URI")
+
+        return v
+
+    @validator("extensions", pre=True)
+    def parse_extensions(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        # 1. Check extension depth first
+        def extension_depth(obj: Optional[Dict[str, Any]]) -> int:
+            if not isinstance(obj, dict) or len(obj) == 0:
+                return 0
+
+            return 1 + max(extension_depth(v) for v in obj.values())
+
+        if (depth := extension_depth(v)) > 3:
+            raise ValueError(f"Extension depth is greater than 3: {depth}")
+
+        # 2. Parse valid extensions
+        if v and "bridgeInfo" in v:
+            raw_bridge_info = v.pop("bridgeInfo")
+            v["bridgeInfo"] = {int(k): BridgeInfo.parse_obj(v) for k, v in raw_bridge_info.items()}
+
+        return v
+
+    @validator("extensions")
+    def extensions_must_contain_allowed_types(
+        cls, d: Optional[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        if not d:
+            return d
+
+        # NOTE: `extensions` is mapping from `str` to either:
+        #       - a parsed `dict` type (e.g. `BaseModel`)
+        #       - a "simple" type (e.g. dict, string, integer or boolean value)
+        for key, val in d.items():
+            if val is not None and not isinstance(val, (BaseModel, str, int, bool, dict)):
+                raise ValueError(f"Incorrect extension field value: {val}")
+
+        return d
+
+    @property
+    def bridge_info(self) -> Optional[BridgeInfo]:
+        if self.extensions and "bridgeInfo" in self.extensions:
+            return self.extensions["bridgeInfo"]  # type: ignore
+
+        return None
 
     @validator("address")
     def address_must_hex(cls, v: str):
@@ -56,18 +114,6 @@ class TokenInfo(BaseModel):
             raise ValueError(f"Invalid token decimals: {v}")
 
         return v
-
-    @validator("extensions")
-    def extensions_must_contain_simple_types(cls, d: Optional[dict]) -> Optional[dict]:
-        if not d:
-            return d
-
-        # `extensions` is `Dict[str, Union[str, int, bool, None]]`, but pydantic mutates entries
-        for val in d.values():
-            if not isinstance(val, (str, int, bool)) and val is not None:
-                raise ValueError(f"Incorrect extension field value: {val}")
-
-        return d
 
 
 class Tag(BaseModel):
@@ -109,7 +155,7 @@ class TokenList(BaseModel):
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
     tags: Optional[Dict[TagId, Tag]] = None
-    logoURI: Optional[AnyUrl] = None
+    logoURI: Optional[str] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -133,6 +179,16 @@ class TokenList(BaseModel):
     class Config:
         # NOTE: Not frozen as we may need to dynamically modify this
         froze = False
+
+    @validator("logoURI")
+    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+
+        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+            raise ValueError(f"'{v}' is not a valid URI")
+
+        return v
 
     def dict(self, *args, **kwargs) -> dict:
         data = super().dict(*args, **kwargs)

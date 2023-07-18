@@ -2,13 +2,16 @@ import os
 
 import github
 import pytest
-import requests
+import requests  # type: ignore[import]
 from pydantic import ValidationError
 
 from tokenlists import TokenList
 
 # NOTE: Must export GITHUB_ACCESS_TOKEN
-UNISWAP_REPO = github.Github(os.environ["GITHUB_ACCESS_TOKEN"]).get_repo("Uniswap/token-lists")
+UNISWAP_REPO = github.Github(auth=github.Auth.Token(os.environ["GITHUB_ACCESS_TOKEN"])).get_repo(
+    "Uniswap/token-lists"
+)
+
 UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/test/schema/"
 
 
@@ -19,12 +22,10 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 def test_uniswap_tokenlists(token_list_name):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_name).json()
 
-    if token_list_name in (
-        "example-crosschain.tokenlist.json",
-        "extensions-valid-object.tokenlist.json",
-    ):
-        # TODO: Unskip once can handle object extensions
-        pytest.skip("https://github.com/ApeWorX/py-tokenlists/issues/20")
+    if token_list_name == "example.tokenlist.json":
+        # NOTE: No idea why this breaking change was necessary
+        #       https://github.com/Uniswap/token-lists/pull/420
+        token_list.pop("tokenMap")
 
     if "invalid" not in token_list_name:
         assert TokenList.parse_obj(token_list).dict() == token_list
