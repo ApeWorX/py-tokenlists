@@ -115,12 +115,14 @@ class TokenListManager:
         matching_tokens = list(token_iter)
         if len(matching_tokens) == 0:
             raise ValueError(
-                f"Token with symbol '{symbol}' does not exist" f" within '{tokenlist}' token list."
+                f"Token with symbol '{symbol}' does not exist"
+                f" within '{tokenlist.name}' token list."
             )
 
         elif len(matching_tokens) > 1:
             raise ValueError(
-                f"Multiple tokens with symbol '{symbol}'" f" found in '{tokenlist}' token list."
+                f"Multiple tokens with symbol '{symbol}'"
+                f" found in '{tokenlist.name}' token list."
             )
 
         else:
