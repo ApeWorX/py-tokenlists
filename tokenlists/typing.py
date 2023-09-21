@@ -96,7 +96,7 @@ class TokenInfo(BaseModel):
     @property
     def bridge_info(self) -> Optional[BridgeInfo]:
         if self.extensions and "bridgeInfo" in self.extensions:
-            return self.extensions["bridgeInfo"]  # type: ignore
+            return self.extensions["bridgeInfo"]
 
         return None
 
