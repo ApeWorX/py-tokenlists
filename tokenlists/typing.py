@@ -14,9 +14,6 @@ TokenSymbol = str
 
 
 class BaseModel(_BaseModel):
-    def dict(self, *args, **kwargs):
-        return self.model_dump(*args, **kwargs)
-
     def model_dump(self, *args, **kwargs):
         if "exclude_unset" not in kwargs:
             kwargs["exclude_unset"] = True
@@ -193,9 +190,6 @@ class TokenList(BaseModel):
             raise ValueError(f"'{v}' is not a valid URI")
 
         return v
-
-    def dict(self, *args, **kwargs):
-        return self.model_dump(*args, **kwargs)
 
     def model_dump(self, *args, **kwargs) -> Dict:
         data = super().model_dump(*args, **kwargs)
