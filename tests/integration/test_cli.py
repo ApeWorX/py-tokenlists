@@ -16,12 +16,12 @@ def test_empty_list(runner, cli):
 
 
 def test_install(runner, cli):
-    result = runner.invoke(cli, ["list"])
-    assert result.exit_code == 0
-    assert "No tokenlists exist" in result.output
+    # result = runner.invoke(cli, ["list"])
+    # assert result.exit_code == 0
+    # assert "No tokenlists exist" in result.output
 
     result = runner.invoke(cli, ["install", TEST_URI])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
 
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0

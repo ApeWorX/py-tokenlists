@@ -8,7 +8,7 @@ extras_require = {
         "pytest>=6.0",  # Core testing package
         "pytest-xdist",  # multi-process runner
         "pytest-cov",  # Coverage analyzer plugin
-        "hypothesis>=6.2.0,<7",  # Strategy-based fuzzer
+        "hypothesis>=6.86.2,<7",  # Strategy-based fuzzer
         "PyGithub>=1.54,<2",  # Necessary to pull official schema from github
         "hypothesis-jsonschema==0.19.0",  # Fuzzes based on a json schema
     ],
@@ -70,7 +70,6 @@ setup(
         "click>=8.1.3,<9",
         "pydantic>=2.3.0,<3",
         "pyyaml>=6.0,<7",
-        "semantic-version>=2.10.0,<3",
         "requests>=2.28.1,<3",
     ],
     entry_points={"console_scripts": ["tokenlists=tokenlists._cli:cli"]},

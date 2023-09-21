@@ -16,7 +16,7 @@ class TokenListManager:
         # Load all the ones cached on disk
         self.installed_tokenlists = {}
         for path in self.cache_folder.glob("*.json"):
-            tokenlist = TokenList.parse_file(path)
+            tokenlist = TokenList.model_validate_json(path.read_text())
             self.installed_tokenlists[tokenlist.name] = tokenlist
 
         self.default_tokenlist = config.DEFAULT_TOKENLIST
@@ -48,13 +48,13 @@ class TokenListManager:
         except JSONDecodeError as err:
             raise ValueError(f"Invalid response: {response.text}") from err
 
-        tokenlist = TokenList.parse_obj(response_json)
+        tokenlist = TokenList.model_validate(response_json)
         self.installed_tokenlists[tokenlist.name] = tokenlist
 
         # Cache it on disk for later instances
         self.cache_folder.mkdir(exist_ok=True)
         token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
-        token_list_file.write_text(tokenlist.json())
+        token_list_file.write_text(tokenlist.model_dump_json())
 
         return tokenlist.name
 

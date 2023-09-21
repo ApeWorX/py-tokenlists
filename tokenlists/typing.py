@@ -1,16 +1,12 @@
-from datetime import datetime
 from itertools import chain
 from typing import Any, Dict, List, Optional
 
 from pydantic import AnyUrl
 from pydantic import BaseModel as _BaseModel
-from pydantic import validator
-from semantic_version import Version  # type: ignore
+from pydantic import PastDatetime, field_validator
 
 ChainId = int
-
 TagId = str
-
 TokenAddress = str
 TokenName = str
 TokenDecimals = int
@@ -19,10 +15,13 @@ TokenSymbol = str
 
 class BaseModel(_BaseModel):
     def dict(self, *args, **kwargs):
+        return self.model_dump(*args, **kwargs)
+
+    def model_dump(self, *args, **kwargs):
         if "exclude_unset" not in kwargs:
             kwargs["exclude_unset"] = True
 
-        return super().dict(*args, **kwargs)
+        return super().model_dump(*args, **kwargs)
 
     class Config:
         froze = True
@@ -44,7 +43,7 @@ class TokenInfo(BaseModel):
     tags: Optional[List[TagId]] = None
     extensions: Optional[Dict[str, Any]] = None
 
-    @validator("logoURI")
+    @field_validator("logoURI")
     def validate_uri(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
@@ -54,7 +53,7 @@ class TokenInfo(BaseModel):
 
         return v
 
-    @validator("extensions", pre=True)
+    @field_validator("extensions", mode="before")
     def parse_extensions(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         # 1. Check extension depth first
         def extension_depth(obj: Optional[Dict[str, Any]]) -> int:
@@ -68,12 +67,17 @@ class TokenInfo(BaseModel):
 
         # 2. Parse valid extensions
         if v and "bridgeInfo" in v:
-            raw_bridge_info = v.pop("bridgeInfo")
-            v["bridgeInfo"] = {int(k): BridgeInfo.parse_obj(v) for k, v in raw_bridge_info.items()}
+            # NOTE: Avoid modifying `v`.
+            return {
+                **v,
+                "bridgeInfo": {
+                    int(k): BridgeInfo.model_validate(v) for k, v in v["bridgeInfo"].items()
+                },
+            }
 
         return v
 
-    @validator("extensions")
+    @field_validator("extensions")
     def extensions_must_contain_allowed_types(
         cls, d: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
@@ -96,7 +100,7 @@ class TokenInfo(BaseModel):
 
         return None
 
-    @validator("address")
+    @field_validator("address")
     def address_must_hex(cls, v: str):
         if not v.startswith("0x") or set(v) > set("x0123456789abcdefABCDEF") or len(v) % 2 != 0:
             raise ValueError("Address is not hex")
@@ -108,7 +112,7 @@ class TokenInfo(BaseModel):
 
         return v
 
-    @validator("decimals")
+    @field_validator("decimals")
     def decimals_must_be_uint8(cls, v: TokenDecimals):
         if not (0 <= v < 256):
             raise ValueError(f"Invalid token decimals: {v}")
@@ -121,12 +125,12 @@ class Tag(BaseModel):
     description: str
 
 
-class TokenListVersion(BaseModel, Version):
+class TokenListVersion(BaseModel):
     major: int
     minor: int
     patch: int
 
-    @validator("*")
+    @field_validator("*")
     def no_negative_version_numbers(cls, v: int):
         if v < 0:
             raise ValueError("Invalid version number")
@@ -150,7 +154,7 @@ class TokenListVersion(BaseModel, Version):
 
 class TokenList(BaseModel):
     name: str
-    timestamp: datetime
+    timestamp: PastDatetime
     version: TokenListVersion
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
@@ -180,7 +184,7 @@ class TokenList(BaseModel):
         # NOTE: Not frozen as we may need to dynamically modify this
         froze = False
 
-    @validator("logoURI")
+    @field_validator("logoURI")
     def validate_uri(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
@@ -190,8 +194,14 @@ class TokenList(BaseModel):
 
         return v
 
-    def dict(self, *args, **kwargs) -> dict:
-        data = super().dict(*args, **kwargs)
-        # NOTE: This was the easiest way to make sure this property returns isoformat
-        data["timestamp"] = self.timestamp.isoformat()
+    def dict(self, *args, **kwargs):
+        return self.model_dump(*args, **kwargs)
+
+    def model_dump(self, *args, **kwargs) -> Dict:
+        data = super().model_dump(*args, **kwargs)
+
+        if kwargs.get("mode", "").lower() == "json":
+            # NOTE: This was the easiest way to make sure this property returns isoformat
+            data["timestamp"] = self.timestamp.isoformat()
+
         return data

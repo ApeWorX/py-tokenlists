@@ -27,7 +27,9 @@ def clean_data(tl: dict) -> dict:
 @settings(suppress_health_check=(HealthCheck.too_slow,))
 def test_schema(token_list):
     try:
-        assert TokenList.parse_obj(token_list).dict() == clean_data(token_list)
+        assert TokenList.model_validate(token_list).model_dump(mode="json") == clean_data(
+            token_list
+        )
 
     except (ValidationError, ValueError):
         pass  # Expect these kinds of errors
