@@ -49,7 +49,7 @@ class TokenInfo(BaseModel):
         if v is None:
             return v
 
-        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+        if "://" not in v or not AnyUrl(v):
             raise ValueError(f"'{v}' is not a valid URI")
 
         return v
@@ -185,7 +185,7 @@ class TokenList(BaseModel):
         if v is None:
             return v
 
-        if "://" not in v or not AnyUrl(v, scheme=v.split("://")[0]):
+        if "://" not in v or not AnyUrl(v):
             raise ValueError(f"'{v}' is not a valid URI")
 
         return v

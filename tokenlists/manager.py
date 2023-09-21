@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 from typing import Iterator, List, Optional
 
 import requests
@@ -42,7 +43,12 @@ class TokenListManager:
         # Load and store the tokenlist
         response = requests.get(uri)
         response.raise_for_status()
-        tokenlist = TokenList.parse_obj(response.json())
+        try:
+            response_json = response.json()
+        except JSONDecodeError as err:
+            raise ValueError(f"Invalid response: {response.text}") from err
+
+        tokenlist = TokenList.parse_obj(response_json)
         self.installed_tokenlists[tokenlist.name] = tokenlist
 
         # Cache it on disk for later instances
