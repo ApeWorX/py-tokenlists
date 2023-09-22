@@ -77,7 +77,7 @@ def list_tokens(search, tokenlist_name, chain_id):
         lambda t: pattern.match(t.symbol),
         manager.get_tokens(tokenlist_name, chain_id),
     ):
-        click.echo("{address} ({symbol})".format(**token_info.dict()))
+        click.echo("{address} ({symbol})".format(**token_info.model_dump(mode="json")))
 
 
 @cli.command(short_help="Display the info for a particular token")
@@ -92,7 +92,7 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
         raise click.ClickException("No tokenlists available!")
 
     token_info = manager.get_token_info(symbol, tokenlist_name, chain_id, case_insensitive)
-    token_info = token_info.dict()
+    token_info = token_info.model_dump(mode="json")
 
     if "tags" not in token_info:
         token_info["tags"] = ""

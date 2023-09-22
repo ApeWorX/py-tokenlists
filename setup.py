@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from setuptools import find_packages, setup  # type: ignore
+from setuptools import find_packages, setup
 
 extras_require = {
     "test": [  # `test` GitHub Action jobs uses this
         "pytest>=6.0",  # Core testing package
         "pytest-xdist",  # multi-process runner
         "pytest-cov",  # Coverage analyzer plugin
-        "hypothesis>=6.2.0,<7",  # Strategy-based fuzzer
+        "hypothesis>=6.86.2,<7",  # Strategy-based fuzzer
         "PyGithub>=1.54,<2",  # Necessary to pull official schema from github
         "hypothesis-jsonschema==0.19.0",  # Fuzzes based on a json schema
     ],
     "lint": [
-        "black>=23.3.0,<24",  # auto-formatter and linter
-        "mypy>=0.991,<1",  # Static type analyzer
+        "black>=23.9.1,<24",  # auto-formatter and linter
+        "mypy>=1.5.1,<2",  # Static type analyzer
         "types-requests",  # Needed due to mypy typeshed
-        "flake8>=6.0.0,<7",  # Style linter
+        "types-setuptools",  # Needed due to mypy typeshed
+        "flake8>=6.1.0,<7",  # Style linter
         "isort>=5.10.1",  # Import sorting linter
-        "mdformat>=0.7.16",  # Auto-formatter for markdown
+        "mdformat>=0.7.17",  # Auto-formatter for markdown
         "mdformat-gfm>=0.3.5",  # Needed for formatting GitHub-flavored markdown
         "mdformat-frontmatter>=0.4.1",  # Needed for frontmatters-style headers in issue templates
     ],
@@ -68,9 +69,8 @@ setup(
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
         "click>=8.1.3,<9",
-        "pydantic>=1.9.2,<2",
+        "pydantic>=2.3.0,<3",
         "pyyaml>=6.0,<7",
-        "semantic-version>=2.10.0,<3",
         "requests>=2.28.1,<3",
     ],
     entry_points={"console_scripts": ["tokenlists=tokenlists._cli:cli"]},
@@ -82,7 +82,7 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     package_data={"ape_tokens": ["py.typed"]},
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Natural Language :: English",
