@@ -68,8 +68,8 @@ setup(
     python_requires=">=3.8,<4",
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "click>=8.1.3,<9",
-        "pydantic>=2.3.0,<3",
+        "click>=8.1.7,<9",
+        "pydantic>=2.5.2,<3",
         "pyyaml>=6.0,<7",
         "requests>=2.28.1,<3",
     ],

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import AnyUrl
 from pydantic import BaseModel as _BaseModel
-from pydantic import PastDatetime, field_validator
+from pydantic import ConfigDict, PastDatetime, field_validator
 
 ChainId = int
 TagId = str
@@ -20,8 +20,7 @@ class BaseModel(_BaseModel):
 
         return super().model_dump(*args, **kwargs)
 
-    class Config:
-        froze = True
+    model_config = ConfigDict(froze=True)
 
 
 class BridgeInfo(BaseModel):
@@ -177,9 +176,7 @@ class TokenList(BaseModel):
                 f"Missing reference tags in tokenlist: {token_ref_tags - tokenlist_tags}"
             )
 
-    class Config:
-        # NOTE: Not frozen as we may need to dynamically modify this
-        froze = False
+    model_config = ConfigDict(froze=False)
 
     @field_validator("logoURI")
     def validate_uri(cls, v: Optional[str]) -> Optional[str]:
