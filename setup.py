@@ -13,8 +13,8 @@ extras_require = {
         "hypothesis-jsonschema==0.19.0",  # Fuzzes based on a json schema
     ],
     "lint": [
-        "black>=23.9.1,<24",  # auto-formatter and linter
-        "mypy>=1.5.1,<2",  # Static type analyzer
+        "black>=23.11.0,<24",  # auto-formatter and linter
+        "mypy>=1.7.1,<2",  # Static type analyzer
         "types-requests",  # Needed due to mypy typeshed
         "types-setuptools",  # Needed due to mypy typeshed
         "flake8>=6.1.0,<7",  # Style linter
@@ -68,8 +68,8 @@ setup(
     python_requires=">=3.8,<4",
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "click>=8.1.3,<9",
-        "pydantic>=2.3.0,<3",
+        "click>=8.1.7,<9",
+        "pydantic>=2.5.2,<3",
         "pyyaml>=6.0,<7",
         "requests>=2.28.1,<3",
     ],
