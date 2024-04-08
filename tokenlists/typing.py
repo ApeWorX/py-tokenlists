@@ -1,7 +1,6 @@
 from itertools import chain
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyUrl
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict, PastDatetime, field_validator
 
@@ -38,16 +37,6 @@ class TokenInfo(BaseModel):
     logoURI: Optional[str] = None
     tags: Optional[List[TagId]] = None
     extensions: Optional[Dict[str, Any]] = None
-
-    @field_validator("logoURI")
-    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return v
-
-        if "://" not in v or not AnyUrl(v):
-            raise ValueError(f"'{v}' is not a valid URI")
-
-        return v
 
     @field_validator("extensions", mode="before")
     def parse_extensions(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -150,7 +139,7 @@ class TokenListVersion(BaseModel):
 
 class TokenList(BaseModel):
     name: str
-    timestamp: PastDatetime
+    timestamp: Union[PastDatetime, str]
     version: TokenListVersion
     tokens: List[TokenInfo]
     keywords: Optional[List[str]] = None
@@ -177,22 +166,3 @@ class TokenList(BaseModel):
             )
 
     model_config = ConfigDict(frozen=False)
-
-    @field_validator("logoURI")
-    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return v
-
-        if "://" not in v or not AnyUrl(v):
-            raise ValueError(f"'{v}' is not a valid URI")
-
-        return v
-
-    def model_dump(self, *args, **kwargs) -> Dict:
-        data = super().model_dump(*args, **kwargs)
-
-        if kwargs.get("mode", "").lower() == "json":
-            # NOTE: This was the easiest way to make sure this property returns isoformat
-            data["timestamp"] = self.timestamp.isoformat()
-
-        return data
