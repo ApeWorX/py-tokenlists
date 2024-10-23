@@ -176,7 +176,7 @@ class TokenList(BaseModel):
                 f"Missing reference tags in tokenlist: {token_ref_tags - tokenlist_tags}"
             )
 
-    model_config = ConfigDict(frozen=False)
+    model_config = ConfigDict(frozen=False, extra="allow")
 
     @field_validator("logoURI")
     def validate_uri(cls, v: Optional[str]) -> Optional[str]:
