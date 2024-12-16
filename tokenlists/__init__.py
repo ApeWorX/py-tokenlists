@@ -17,6 +17,7 @@ def __getattr__(name: str):
     else:
         raise AttributeError(name)
 
+
 __all__ = [
     "TokenInfo",
     "TokenList",
