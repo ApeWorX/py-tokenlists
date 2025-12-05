@@ -119,3 +119,4 @@ dmypy.json
 
 # setuptools-scm
 version.py
+uv.lock

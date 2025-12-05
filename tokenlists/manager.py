@@ -1,5 +1,5 @@
+from collections.abc import Iterator
 from json import JSONDecodeError
-from typing import Iterator, List, Optional
 
 import requests
 
@@ -79,10 +79,10 @@ class TokenListManager:
         self.cache_folder.mkdir(exist_ok=True)
         self.cache_folder.joinpath(".default").write_text(name)
 
-    def available_tokenlists(self) -> List[str]:
+    def available_tokenlists(self) -> list[str]:
         return sorted(self.installed_tokenlists)
 
-    def get_tokenlist(self, token_listname: Optional[str] = None) -> TokenList:
+    def get_tokenlist(self, token_listname: str | None = None) -> TokenList:
         if not token_listname:
             if not self.default_tokenlist:
                 raise ValueError("Default token list has not been set.")
@@ -96,7 +96,7 @@ class TokenListManager:
 
     def get_tokens(
         self,
-        token_listname: Optional[str] = None,  # Use default
+        token_listname: str | None = None,  # Use default
         chain_id: ChainId = 1,  # Ethereum Mainnnet
     ) -> Iterator[TokenInfo]:
         tokenlist = self.get_tokenlist(token_listname)
@@ -105,7 +105,7 @@ class TokenListManager:
     def get_token_info(
         self,
         symbol: TokenSymbol,
-        token_listname: Optional[str] = None,  # Use default
+        token_listname: str | None = None,  # Use default
         chain_id: ChainId = 1,  # Ethereum Mainnnet
         case_insensitive: bool = False,
     ) -> TokenInfo:
@@ -121,14 +121,12 @@ class TokenListManager:
         matching_tokens = list(token_iter)
         if len(matching_tokens) == 0:
             raise ValueError(
-                f"Token with symbol '{symbol}' does not exist"
-                f" within '{tokenlist.name}' token list."
+                f"Token with symbol '{symbol}' does not exist within '{tokenlist.name}' token list."
             )
 
         elif len(matching_tokens) > 1:
             raise ValueError(
-                f"Multiple tokens with symbol '{symbol}'"
-                f" found in '{tokenlist.name}' token list."
+                f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
             )
 
         else:

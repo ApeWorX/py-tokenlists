@@ -105,7 +105,5 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
      Address: {address}
     Decimals: {decimals}
         Tags: {tags}
-    """.format(
-            **token_info
-        )
+    """.format(**token_info)
     )

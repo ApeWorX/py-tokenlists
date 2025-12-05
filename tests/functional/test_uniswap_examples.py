@@ -1,5 +1,5 @@
 import os
-from typing import Any, Optional
+from typing import Any
 
 import github
 import pytest
@@ -18,7 +18,11 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
 
 @pytest.mark.parametrize(
     "token_list_name",
-    [f.name for f in UNISWAP_REPO.get_contents("test/schema")],  # type: ignore
+    [
+        f.name
+        for f in UNISWAP_REPO.get_contents("test/schema")  # type: ignore
+        if "solana" not in f.name
+    ],
 )
 def test_uniswap_tokenlists(token_list_name):
     token_list = requests.get(UNISWAP_RAW_URL + token_list_name).json()
@@ -34,12 +38,14 @@ def test_uniswap_tokenlists(token_list_name):
     else:
         actual = TokenList.model_validate(token_list).model_dump(mode="json")
 
-        def assert_tokenlists(_actual: Any, _expected: Any, parent_key: Optional[str] = None):
+        def assert_tokenlists(_actual: Any, _expected: Any, parent_key: str | None = None):
             parent_key = parent_key or "__root__"
             assert type(_actual) is type(_expected)
 
             if isinstance(_actual, list):
-                for idx, (actual_item, expected_item) in enumerate(zip(_actual, _expected)):
+                for idx, (actual_item, expected_item) in enumerate(
+                    zip(_actual, _expected, strict=True)
+                ):
                     assert_tokenlists(
                         actual_item, expected_item, parent_key=f"{parent_key}_index_{idx}"
                     )

@@ -36,7 +36,7 @@ def test_remove(runner, cli):
     assert result.exit_code == 0
     assert "1inch" in result.output
 
-    result = runner.invoke(cli, ["remove", "1inch"])
+    result = runner.invoke(cli, ["remove", "1inch default token list"])
     assert result.exit_code == 0
     assert result.exit_code == 0
 
@@ -49,6 +49,7 @@ def test_default(runner, cli):
     result = runner.invoke(cli, ["install", TEST_URI])
     assert result.exit_code == 0
 
-    result = runner.invoke(cli, ["set-default", "1inch"])
+    result = runner.invoke(cli, ["set-default", "1inch default token list"])
+
     assert result.exit_code == 0
     assert "1inch" in result.output
