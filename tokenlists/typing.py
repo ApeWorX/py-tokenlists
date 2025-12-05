@@ -1,9 +1,8 @@
 from itertools import chain
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from pydantic import AnyUrl
+from pydantic import AnyUrl, ConfigDict, PastDatetime, field_validator
 from pydantic import BaseModel as _BaseModel
-from pydantic import ConfigDict, PastDatetime, field_validator
 
 ChainId = int
 TagId = str
@@ -25,8 +24,8 @@ class BaseModel(_BaseModel):
 
 class BridgeInfo(BaseModel):
     tokenAddress: TokenAddress
-    originBridgeAddress: Optional[TokenAddress] = None
-    destBridgeAddress: Optional[TokenAddress] = None
+    originBridgeAddress: TokenAddress | None = None
+    destBridgeAddress: TokenAddress | None = None
 
 
 class TokenInfo(BaseModel):
@@ -35,12 +34,12 @@ class TokenInfo(BaseModel):
     name: TokenName
     decimals: TokenDecimals
     symbol: TokenSymbol
-    logoURI: Optional[str] = None
-    tags: Optional[List[TagId]] = None
-    extensions: Optional[Dict[str, Any]] = None
+    logoURI: str | None = None
+    tags: list[TagId] | None = None
+    extensions: dict[str, Any] | None = None
 
     @field_validator("logoURI")
-    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+    def validate_uri(cls, v: str | None) -> str | None:
         if v is None:
             return v
 
@@ -50,9 +49,9 @@ class TokenInfo(BaseModel):
         return v
 
     @field_validator("extensions", mode="before")
-    def parse_extensions(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def parse_extensions(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         # 1. Check extension depth first
-        def extension_depth(obj: Optional[Dict[str, Any]]) -> int:
+        def extension_depth(obj: dict[str, Any] | None) -> int:
             if not isinstance(obj, dict) or len(obj) == 0:
                 return 0
 
@@ -75,22 +74,22 @@ class TokenInfo(BaseModel):
 
     @field_validator("extensions")
     def extensions_must_contain_allowed_types(
-        cls, d: Optional[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+        cls, d: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
         if not d:
             return d
 
         # NOTE: `extensions` is mapping from `str` to either:
         #       - a parsed `dict` type (e.g. `BaseModel`)
         #       - a "simple" type (e.g. dict, string, integer or boolean value)
-        for key, val in d.items():
+        for _key, val in d.items():
             if val is not None and not isinstance(val, (BaseModel, str, int, bool, dict)):
                 raise ValueError(f"Incorrect extension field value: {val}")
 
         return d
 
     @property
-    def bridge_info(self) -> Optional[BridgeInfo]:
+    def bridge_info(self) -> BridgeInfo | None:
         if self.extensions and "bridgeInfo" in self.extensions:
             return self.extensions["bridgeInfo"]
 
@@ -152,10 +151,10 @@ class TokenList(BaseModel):
     name: str
     timestamp: PastDatetime
     version: TokenListVersion
-    tokens: List[TokenInfo]
-    keywords: Optional[List[str]] = None
-    tags: Optional[Dict[TagId, Tag]] = None
-    logoURI: Optional[str] = None
+    tokens: list[TokenInfo]
+    keywords: list[str] | None = None
+    tags: dict[TagId, Tag] | None = None
+    logoURI: str | None = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -165,7 +164,7 @@ class TokenList(BaseModel):
             list(token.tags) if token.tags else [] for token in self.tokens
         )
         # Obtain the set of all enumerated reference tags e.g. "1", "2", etc.
-        token_ref_tags = set(tag for tag in set(all_tags) if set(tag) < set("0123456789"))
+        token_ref_tags = {tag for tag in set(all_tags) if set(tag) < set("0123456789")}
 
         # Compare the enumerated reference tags from the tokens to the tag set in this class
         tokenlist_tags = set(iter(self.tags)) if self.tags else set()
@@ -179,7 +178,7 @@ class TokenList(BaseModel):
     model_config = ConfigDict(frozen=False, extra="allow")
 
     @field_validator("logoURI")
-    def validate_uri(cls, v: Optional[str]) -> Optional[str]:
+    def validate_uri(cls, v: str | None) -> str | None:
         if v is None:
             return v
 
@@ -188,7 +187,7 @@ class TokenList(BaseModel):
 
         return v
 
-    def model_dump(self, *args, **kwargs) -> Dict:
+    def model_dump(self, *args, **kwargs) -> dict:
         data = super().model_dump(*args, **kwargs)
 
         if kwargs.get("mode", "").lower() == "json":

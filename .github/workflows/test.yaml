@@ -2,91 +2,73 @@ on: ["push", "pull_request"]
 
 name: Test
 
+concurrency:
+  # Cancel older, in-progress jobs from the same PR, same workflow.
+  # use run_id if the job is triggered by a push to ensure
+  # push-triggered jobs to not get canceled.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
     GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
     linting:
         runs-on: ubuntu-latest
-
         steps:
-        - uses: actions/checkout@v3
+            - uses: actions/checkout@v5
+            - name: Setup Python
+              uses: astral-sh/setup-uv@v7
+              with:
+                  python-version: "3.10"
 
-        - name: Setup Python
-          uses: actions/setup-python@v4
-          with:
-              python-version: "3.10"
+            - name: Run Ruff Lint
+              run: uv run --group lint ruff check .
 
-        - name: Install Dependencies
-          run: pip install .[lint]
+            - name: Run Ruff Format
+              run: uv run --group lint ruff format --check .
 
-        - name: Run Black
-          run: black --check .
-
-        - name: Run flake8
-          run: flake8 .
-
-        - name: Run isort
-          run: isort --check-only .
-
-        - name: Run mdformat
-          run: mdformat . --check
+            - name: Run mdformat
+              run: uv run --group lint mdformat --check *.md docs/
 
     type-check:
         runs-on: ubuntu-latest
-
         steps:
-        - uses: actions/checkout@v3
+            - uses: actions/checkout@v5
+            - name: Setup Python
+              uses: astral-sh/setup-uv@v7
+              with:
+                  # NOTE: Use minimum supported Python version to avoid using new syntax
+                  python-version: "3.10"
 
-        - name: Setup Python
-          uses: actions/setup-python@v4
-          with:
-              python-version: "3.10"
+            - name: Run MyPy
+              run: uv run --group lint --group test mypy .
 
-        - name: Install Dependencies
-          run: pip install .[lint,test]  # Might need test deps
-
-        - name: Run MyPy
-          run: mypy .
-
-    functional:
+    tests:
         runs-on: ${{ matrix.os }}
-
         strategy:
             matrix:
-                os: [ubuntu-latest, macos-latest]   # eventually add `windows-latest`
-                python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+                os: [ubuntu-latest, macos-latest, windows-latest]
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
         steps:
-        - uses: actions/checkout@v3
+            - uses: actions/checkout@v5
+            - name: Setup Python
+              uses: astral-sh/setup-uv@v7
+              with:
+                  python-version: ${{ matrix.python-version }}
 
-        - name: Setup Python
-          uses: actions/setup-python@v4
-          with:
-              python-version: ${{ matrix.python-version }}
-
-        - name: Install Dependencies
-          run: pip install .[test]
-
-        - name: Run Tests
-          run: pytest -m "not fuzzing" -n 0 -s --cov
+            - name: Run Pytest
+              run: uv run --group test pytest -m "not fuzzing" -s
 
     fuzzing:
         runs-on: ubuntu-latest
-
         strategy:
             fail-fast: true
-
         steps:
-        - uses: actions/checkout@v3
+            - uses: actions/checkout@v5
+            - name: Setup Python
+              uses: astral-sh/setup-uv@v7
 
-        - name: Setup Python
-          uses: actions/setup-python@v4
-          with:
-              python-version: "3.10"
-
-        - name: Install Dependencies
-          run: pip install .[test]
-
-        - name: Run Tests
-          run: pytest -m fuzzing --no-cov -s
+            - name: Run Tests
+              run: uv run --group test pytest -m "fuzzing" --no-cov -s
