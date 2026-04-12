@@ -222,6 +222,40 @@ def test_update_tokenlist_without_stored_source_url_returns_none(tmp_path, monke
     assert TokenListManager().update_tokenlist("Alpha") is None
 
 
+def test_install_writes_utf8_cache_file(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    class FakeResponse:
+        text = ""
+        url = "https://example.com/tokenlist.json"
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "name": "Alpha",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [
+                    {
+                        **_token("A\u0361LPHA", "0x0000000000000000000000000000000000000001"),
+                        "name": "Optimism \u0361 Token",
+                    }
+                ],
+            }
+
+    monkeypatch.setattr("tokenlists.manager.httpx.get", lambda *args, **kwargs: FakeResponse())
+
+    TokenListManager().install_tokenlist("https://example.com/install.json")
+
+    cached = cache_path.joinpath("Alpha.json").read_text(encoding="utf-8")
+    assert "A\u0361LPHA" in cached
+
+
 def _write_tokenlist(cache_path, name, *tokens, **extra_data):
     cache_path.joinpath(f"{name}.json").write_text(
         json.dumps(
@@ -232,7 +266,8 @@ def _write_tokenlist(cache_path, name, *tokens, **extra_data):
                 "tokens": list(tokens),
                 **extra_data,
             }
-        )
+        ),
+        encoding="utf-8",
     )
 
 

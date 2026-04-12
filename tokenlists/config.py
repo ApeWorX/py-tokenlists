@@ -22,7 +22,7 @@ def get_local_tokenlists_config() -> dict[str, Any] | None:
     if pyproject_path is None:
         return None
 
-    data = tomllib.loads(pyproject_path.read_text())
+    data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
     tool_config = data.get("tool", {})
     if not isinstance(tool_config, dict):
         return None
@@ -47,7 +47,7 @@ def get_tokenlist_order() -> list[str] | None:
 
 def get_suggested_tokenlists() -> dict[str, dict[str, str]]:
     suggested_tokenlists = resources.files("tokenlists").joinpath("suggested.json")
-    return json.loads(suggested_tokenlists.read_text())
+    return json.loads(suggested_tokenlists.read_text(encoding="utf-8"))
 
 
 def _find_local_pyproject_path() -> Path | None:

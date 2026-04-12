@@ -20,7 +20,7 @@ class TokenListManager:
         # Load all the ones cached on disk
         self.installed_tokenlists = {}
         for path in sorted(self.cache_folder.glob("*.json")):
-            tokenlist = TokenList.model_validate_json(path.read_text())
+            tokenlist = TokenList.model_validate_json(path.read_text(encoding="utf-8"))
             self.installed_tokenlists[tokenlist.name] = tokenlist
 
         self.tokenlist_order = self._build_tokenlist_order()
@@ -139,7 +139,7 @@ class TokenListManager:
         if not default_tokenlist_cachefile.exists():
             return installed_names
 
-        legacy_default = default_tokenlist_cachefile.read_text().strip()
+        legacy_default = default_tokenlist_cachefile.read_text(encoding="utf-8").strip()
         warnings.warn(
             (
                 "The legacy `.default` tokenlist file is deprecated. "
@@ -166,7 +166,7 @@ class TokenListManager:
 
         self.installed_tokenlists[tokenlist.name] = tokenlist
         token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
-        token_list_file.write_text(tokenlist.model_dump_json())
+        token_list_file.write_text(tokenlist.model_dump_json(), encoding="utf-8")
         self.tokenlist_order = self._build_tokenlist_order()
 
     def _fetch_tokenlist(self, uri: str) -> tuple[TokenList, str]:
