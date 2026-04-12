@@ -2,8 +2,8 @@ import os
 from typing import Any
 
 import github
+import httpx
 import pytest
-import requests
 from pydantic import ValidationError
 
 from tokenlists import TokenList
@@ -25,7 +25,7 @@ UNISWAP_RAW_URL = "https://raw.githubusercontent.com/Uniswap/token-lists/master/
     ],
 )
 def test_uniswap_tokenlists(token_list_name):
-    token_list = requests.get(UNISWAP_RAW_URL + token_list_name).json()
+    token_list = httpx.get(UNISWAP_RAW_URL + token_list_name, follow_redirects=True).json()
 
     if token_list_name == "example.tokenlist.json":
         # NOTE: No idea why this breaking change was necessary

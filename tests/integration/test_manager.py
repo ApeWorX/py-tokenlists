@@ -2,8 +2,7 @@ import json
 
 import pytest
 
-from tokenlists import TokenListManager
-from tokenlists import config
+from tokenlists import TokenListManager, config
 
 
 def test_get_token_info_uses_local_pyproject_order(tmp_path, monkeypatch):
@@ -19,8 +18,12 @@ order = ["Beta", "Alpha"]
 """.strip()
     )
 
-    _write_tokenlist(cache_path, "Alpha", _token("TKN", "0x0000000000000000000000000000000000000001"))
-    _write_tokenlist(cache_path, "Beta", _token("TKN", "0x0000000000000000000000000000000000000002"))
+    _write_tokenlist(
+        cache_path, "Alpha", _token("TKN", "0x0000000000000000000000000000000000000001")
+    )
+    _write_tokenlist(
+        cache_path, "Beta", _token("TKN", "0x0000000000000000000000000000000000000002")
+    )
 
     token_info = TokenListManager().get_token_info("TKN")
     assert token_info.address == "0x0000000000000000000000000000000000000002"
@@ -39,8 +42,12 @@ order = ["Beta"]
 """.strip()
     )
 
-    _write_tokenlist(cache_path, "Alpha", _token("AAA", "0x0000000000000000000000000000000000000001"))
-    _write_tokenlist(cache_path, "Beta", _token("BBB", "0x0000000000000000000000000000000000000002"))
+    _write_tokenlist(
+        cache_path, "Alpha", _token("AAA", "0x0000000000000000000000000000000000000001")
+    )
+    _write_tokenlist(
+        cache_path, "Beta", _token("BBB", "0x0000000000000000000000000000000000000002")
+    )
 
     symbols = [token.symbol for token in TokenListManager().get_tokens()]
     assert symbols == ["BBB", "AAA"]
@@ -102,8 +109,12 @@ def test_legacy_default_file_warns_and_migrates_order(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
     monkeypatch.chdir(tmp_path)
 
-    _write_tokenlist(cache_path, "Alpha", _token("TKN", "0x0000000000000000000000000000000000000001"))
-    _write_tokenlist(cache_path, "Beta", _token("TKN", "0x0000000000000000000000000000000000000002"))
+    _write_tokenlist(
+        cache_path, "Alpha", _token("TKN", "0x0000000000000000000000000000000000000001")
+    )
+    _write_tokenlist(
+        cache_path, "Beta", _token("TKN", "0x0000000000000000000000000000000000000002")
+    )
     cache_path.joinpath(".default").write_text("Beta")
 
     with pytest.warns(FutureWarning, match="legacy `.default` tokenlist file is deprecated"):
@@ -135,12 +146,21 @@ def test_install_persists_resolved_source_url(tmp_path, monkeypatch):
                 "tokens": [_token("AAA", "0x0000000000000000000000000000000000000001")],
             }
 
-    monkeypatch.setattr("tokenlists.manager.requests.get", lambda uri: FakeResponse())
+    requested = {}
+
+    def fake_get(uri, **kwargs):
+        requested["uri"] = uri
+        requested["kwargs"] = kwargs
+        return FakeResponse()
+
+    monkeypatch.setattr("tokenlists.manager.httpx.get", fake_get)
 
     TokenListManager().install_tokenlist("https://example.com/install.json")
 
     cached = json.loads(cache_path.joinpath("Alpha.json").read_text())
     assert cached["tokenlistsSourceUrl"] == "https://example.com/tokenlist.json"
+    assert requested["uri"] == "https://example.com/install.json"
+    assert requested["kwargs"]["follow_redirects"] is True
 
 
 def test_update_tokenlist_uses_stored_source_url(tmp_path, monkeypatch):
@@ -173,11 +193,12 @@ def test_update_tokenlist_uses_stored_source_url(tmp_path, monkeypatch):
 
     called_uris = []
 
-    def fake_get(uri):
+    def fake_get(uri, **kwargs):
         called_uris.append(uri)
+        assert kwargs["follow_redirects"] is True
         return FakeResponse()
 
-    monkeypatch.setattr("tokenlists.manager.requests.get", fake_get)
+    monkeypatch.setattr("tokenlists.manager.httpx.get", fake_get)
 
     updated_name = TokenListManager().update_tokenlist("Alpha")
 
@@ -194,7 +215,9 @@ def test_update_tokenlist_without_stored_source_url_returns_none(tmp_path, monke
     monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
     monkeypatch.chdir(tmp_path)
 
-    _write_tokenlist(cache_path, "Alpha", _token("AAA", "0x0000000000000000000000000000000000000001"))
+    _write_tokenlist(
+        cache_path, "Alpha", _token("AAA", "0x0000000000000000000000000000000000000001")
+    )
 
     assert TokenListManager().update_tokenlist("Alpha") is None
 

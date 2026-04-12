@@ -30,9 +30,9 @@ keywords = ["ethereum"]
 requires-python = ">=3.10"
 dependencies = [
     "click>=8.1.7,<9",
+    "httpx>=0.27,<1",
     "pydantic>=2.5.2,<3",
     "pyyaml>=6.0,<7",
-    "requests>=2.28.1,<3",
     "tomli>=2.0; python_version<'3.11'",
 ]
 
@@ -51,7 +51,6 @@ test = [
 lint = [
     "ruff",
     "mypy>=1.16,<2",
-    "types-requests",
     "types-setuptools",
     "mdformat>=0.7.19",
     "mdformat-gfm>=0.3.5",

@@ -1,13 +1,14 @@
+import warnings
 from collections.abc import Iterator
 from json import JSONDecodeError
-import warnings
 
-import requests
+import httpx
 
 from tokenlists import config
 from tokenlists.typing import ChainId, TokenInfo, TokenList, TokenSymbol
 
 SOURCE_URI_FIELD = "tokenlistsSourceUrl"
+HTTP_TIMEOUT = 30.0
 
 
 class TokenListManager:
@@ -114,7 +115,9 @@ class TokenListManager:
                 f"Token with symbol '{symbol}' does not exist within '{token_listname}' token list."
             )
 
-        raise ValueError(f"Token with symbol '{symbol}' does not exist within installed token lists.")
+        raise ValueError(
+            f"Token with symbol '{symbol}' does not exist within installed token lists."
+        )
 
     def _build_tokenlist_order(self) -> list[str]:
         installed_names = list(self.installed_tokenlists)
@@ -166,9 +169,15 @@ class TokenListManager:
         self.tokenlist_order = self._build_tokenlist_order()
 
     def _fetch_tokenlist(self, uri: str) -> tuple[TokenList, str]:
-        resolved_uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri) if uri.endswith(".eth") else uri
+        resolved_uri = (
+            config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri) if uri.endswith(".eth") else uri
+        )
 
-        response = requests.get(resolved_uri)
+        response = httpx.get(
+            resolved_uri,
+            follow_redirects=True,
+            timeout=HTTP_TIMEOUT,
+        )
         response.raise_for_status()
         try:
             response_json = response.json()
