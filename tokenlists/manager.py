@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from json import JSONDecodeError
+import warnings
 
 import requests
 
@@ -15,21 +16,11 @@ class TokenListManager:
 
         # Load all the ones cached on disk
         self.installed_tokenlists = {}
-        for path in self.cache_folder.glob("*.json"):
+        for path in sorted(self.cache_folder.glob("*.json")):
             tokenlist = TokenList.model_validate_json(path.read_text())
             self.installed_tokenlists[tokenlist.name] = tokenlist
 
-        self.default_tokenlist = config.DEFAULT_TOKENLIST
-        if not self.default_tokenlist:
-            # Default might be cached on disk (does not override config)
-            default_tokenlist_cachefile = self.cache_folder.joinpath(".default")
-
-            if default_tokenlist_cachefile.exists():
-                self.default_tokenlist = default_tokenlist_cachefile.read_text()
-
-            elif len(self.installed_tokenlists) > 0:
-                # Not cached on disk, use first installed list
-                self.default_tokenlist = next(iter(self.installed_tokenlists))
+        self.tokenlist_order = self._build_tokenlist_order()
 
     def install_tokenlist(self, uri: str) -> str:
         """
@@ -50,6 +41,7 @@ class TokenListManager:
 
         tokenlist = TokenList.model_validate(response_json)
         self.installed_tokenlists[tokenlist.name] = tokenlist
+        self.tokenlist_order = self._build_tokenlist_order()
 
         # Cache it on disk for later instances
         self.cache_folder.mkdir(exist_ok=True)
@@ -61,34 +53,16 @@ class TokenListManager:
     def remove_tokenlist(self, tokenlist_name: str) -> None:
         tokenlist = self.installed_tokenlists[tokenlist_name]
 
-        if tokenlist.name == self.default_tokenlist:
-            self.default_tokenlist = ""
-
         token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
         token_list_file.unlink()
 
         del self.installed_tokenlists[tokenlist.name]
-
-    def set_default_tokenlist(self, name: str) -> None:
-        if name not in self.installed_tokenlists:
-            raise ValueError(f"Unknown token list: {name}")
-
-        self.default_tokenlist = name
-
-        # Cache it on disk too
-        self.cache_folder.mkdir(exist_ok=True)
-        self.cache_folder.joinpath(".default").write_text(name)
+        self.tokenlist_order = self._build_tokenlist_order()
 
     def available_tokenlists(self) -> list[str]:
-        return sorted(self.installed_tokenlists)
+        return list(self.tokenlist_order)
 
-    def get_tokenlist(self, token_listname: str | None = None) -> TokenList:
-        if not token_listname:
-            if not self.default_tokenlist:
-                raise ValueError("Default token list has not been set.")
-
-            token_listname = self.default_tokenlist
-
+    def get_tokenlist(self, token_listname: str) -> TokenList:
         if token_listname not in self.installed_tokenlists:
             raise ValueError(f"Unknown token list: {token_listname}")
 
@@ -96,38 +70,96 @@ class TokenListManager:
 
     def get_tokens(
         self,
-        token_listname: str | None = None,  # Use default
+        token_listname: str | None = None,
         chain_id: ChainId = 1,  # Ethereum Mainnnet
     ) -> Iterator[TokenInfo]:
-        tokenlist = self.get_tokenlist(token_listname)
-        return filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+        for tokenlist in self._iter_tokenlists(token_listname):
+            for token in tokenlist.tokens:
+                if token.chainId == chain_id:
+                    yield token
 
     def get_token_info(
         self,
         symbol: TokenSymbol,
-        token_listname: str | None = None,  # Use default
+        token_listname: str | None = None,
         chain_id: ChainId = 1,  # Ethereum Mainnnet
         case_insensitive: bool = False,
     ) -> TokenInfo:
-        tokenlist = self.get_tokenlist(token_listname)
+        for tokenlist in self._iter_tokenlists(token_listname):
+            matching_tokens = self._get_matching_tokens(
+                tokenlist, symbol, chain_id, case_insensitive
+            )
+            if len(matching_tokens) == 0:
+                continue
 
-        token_iter = filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
-        token_iter = (
-            filter(lambda t: t.symbol == symbol, token_iter)
-            if case_insensitive
-            else filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
+            if len(matching_tokens) > 1:
+                raise ValueError(
+                    f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
+                )
+
+            return matching_tokens[0]
+
+        if token_listname:
+            raise ValueError(
+                f"Token with symbol '{symbol}' does not exist within '{token_listname}' token list."
+            )
+
+        raise ValueError(f"Token with symbol '{symbol}' does not exist within installed token lists.")
+
+    def _build_tokenlist_order(self) -> list[str]:
+        installed_names = list(self.installed_tokenlists)
+        configured_order = config.get_tokenlist_order()
+        if configured_order is not None:
+            ordered_names = []
+            for name in configured_order:
+                if name in self.installed_tokenlists and name not in ordered_names:
+                    ordered_names.append(name)
+
+            ordered_names.extend(name for name in installed_names if name not in ordered_names)
+            return ordered_names
+
+        return self._build_legacy_tokenlist_order(installed_names)
+
+    def _build_legacy_tokenlist_order(self, installed_names: list[str]) -> list[str]:
+        default_tokenlist_cachefile = self.cache_folder.joinpath(".default")
+        if not default_tokenlist_cachefile.exists():
+            return installed_names
+
+        legacy_default = default_tokenlist_cachefile.read_text().strip()
+        warnings.warn(
+            (
+                "The legacy `.default` tokenlist file is deprecated. "
+                "Move your preferred ordering into `[tool.tokenlists].order` in `pyproject.toml`. "
+                "Support for `.default` will be removed in an upcoming version."
+            ),
+            FutureWarning,
+            stacklevel=2,
         )
 
-        matching_tokens = list(token_iter)
-        if len(matching_tokens) == 0:
-            raise ValueError(
-                f"Token with symbol '{symbol}' does not exist within '{tokenlist.name}' token list."
-            )
+        if legacy_default in self.installed_tokenlists:
+            return [legacy_default, *(name for name in installed_names if name != legacy_default)]
 
-        elif len(matching_tokens) > 1:
-            raise ValueError(
-                f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
-            )
+        return installed_names
 
-        else:
-            return matching_tokens[0]
+    def _iter_tokenlists(self, token_listname: str | None = None) -> Iterator[TokenList]:
+        if token_listname:
+            yield self.get_tokenlist(token_listname)
+            return
+
+        for name in self.tokenlist_order:
+            yield self.installed_tokenlists[name]
+
+    def _get_matching_tokens(
+        self,
+        tokenlist: TokenList,
+        symbol: TokenSymbol,
+        chain_id: ChainId,
+        case_insensitive: bool,
+    ) -> list[TokenInfo]:
+        token_iter = filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+        token_iter = (
+            filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
+            if case_insensitive
+            else filter(lambda t: t.symbol == symbol, token_iter)
+        )
+        return list(token_iter)

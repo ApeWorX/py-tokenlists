@@ -1,6 +1,49 @@
 from pathlib import Path
+from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib
 
 DEFAULT_CACHE_PATH = Path.home().joinpath(".tokenlists")
-DEFAULT_TOKENLIST: str | None = None
 
 UNISWAP_ENS_TOKENLISTS_HOST = "https://wispy-bird-88a7.uniswap.workers.dev/?url=http://{}.link"
+
+
+def get_local_tokenlists_config() -> dict[str, Any] | None:
+    pyproject_path = _find_local_pyproject_path()
+    if pyproject_path is None:
+        return None
+
+    data = tomllib.loads(pyproject_path.read_text())
+    tool_config = data.get("tool", {})
+    if not isinstance(tool_config, dict):
+        return None
+
+    tokenlists_config = tool_config.get("tokenlists")
+    return tokenlists_config if isinstance(tokenlists_config, dict) else None
+
+
+def get_tokenlist_order() -> list[str] | None:
+    tokenlists_config = get_local_tokenlists_config()
+    if tokenlists_config is None:
+        return None
+
+    order = tokenlists_config.get("order", [])
+    if not isinstance(order, list) or not all(isinstance(item, str) for item in order):
+        raise ValueError(
+            "Expected `[tool.tokenlists].order` in `pyproject.toml` to be a list of strings."
+        )
+
+    return order
+
+
+def _find_local_pyproject_path() -> Path | None:
+    current_path = Path.cwd().resolve()
+    for directory in (current_path, *current_path.parents):
+        pyproject_path = directory.joinpath("pyproject.toml")
+        if pyproject_path.is_file():
+            return pyproject_path
+
+    return None

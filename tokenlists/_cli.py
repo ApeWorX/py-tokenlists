@@ -53,14 +53,6 @@ def remove(name):
     manager.remove_tokenlist(name)
 
 
-@cli.command(short_help="Set the default tokenlist")
-@click.argument("name", type=TokenlistChoice())
-def set_default(name):
-    manager = TokenListManager()
-    manager.set_default_tokenlist(name)
-    click.echo(f"Default tokenlist is now: '{manager.default_tokenlist}'")
-
-
 @cli.command(short_help="Display the names and versions of all installed tokenlists")
 @click.option("--search", default="")
 @click.option("--tokenlist-name", type=TokenlistChoice(), default=None)
@@ -68,7 +60,7 @@ def set_default(name):
 def list_tokens(search, tokenlist_name, chain_id):
     manager = TokenListManager()
 
-    if not manager.default_tokenlist:
+    if not manager.available_tokenlists():
         raise click.ClickException("No tokenlists available!")
 
     pattern = re.compile(search or ".*")
@@ -88,7 +80,7 @@ def list_tokens(search, tokenlist_name, chain_id):
 def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
     manager = TokenListManager()
 
-    if not manager.default_tokenlist:
+    if not manager.available_tokenlists():
         raise click.ClickException("No tokenlists available!")
 
     token_info = manager.get_token_info(symbol, tokenlist_name, chain_id, case_insensitive)

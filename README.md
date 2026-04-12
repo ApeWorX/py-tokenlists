@@ -40,6 +40,13 @@ python3 setup.py install
 ['1inch']
 ```
 
+Token lookup order is controlled locally through `pyproject.toml`:
+
+```toml
+[tool.tokenlists]
+order = ["My Preferred List", "Fallback List"]
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).

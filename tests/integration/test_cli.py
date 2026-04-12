@@ -45,11 +45,7 @@ def test_remove(runner, cli):
     assert "No tokenlists exist" in result.output
 
 
-def test_default(runner, cli):
-    result = runner.invoke(cli, ["install", TEST_URI])
-    assert result.exit_code == 0
-
+def test_set_default_removed(runner, cli):
     result = runner.invoke(cli, ["set-default", "1inch default token list"])
-
-    assert result.exit_code == 0
-    assert "1inch" in result.output
+    assert result.exit_code != 0
+    assert "No such command 'set-default'" in result.output
