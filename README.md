@@ -40,6 +40,15 @@ python3 setup.py install
 ['1inch']
 ```
 
+Token lookup order is controlled locally through `pyproject.toml`:
+
+```toml
+[tool.tokenlists]
+order = ["My Preferred List", "Fallback List"]
+```
+
+HTTP downloads use `httpx` and honor the standard environment variables that HTTPX documents for restricted networks and custom trust stores, including `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, `SSL_CERT_FILE`, and `SSL_CERT_DIR`.
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).

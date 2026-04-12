@@ -1,3 +1,4 @@
+from tokenlists import __main__ as cli_module
 from tokenlists.version import version
 
 TEST_URI = "tokens.1inch.eth"
@@ -13,6 +14,15 @@ def test_empty_list(runner, cli):
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0
     assert "No tokenlists exist" in result.output
+    assert "tokenlists suggestions" in result.output
+
+
+def test_suggestions(runner, cli):
+    result = runner.invoke(cli, ["suggestions"])
+    assert result.exit_code == 0
+    assert "Suggested Token Lists:" in result.output
+    assert "Uniswap Default List" in result.output
+    assert "https://ipfs.io/ipns/tokens.uniswap.org" in result.output
 
 
 def test_install(runner, cli):
@@ -45,11 +55,68 @@ def test_remove(runner, cli):
     assert "No tokenlists exist" in result.output
 
 
-def test_default(runner, cli):
-    result = runner.invoke(cli, ["install", TEST_URI])
-    assert result.exit_code == 0
-
+def test_set_default_removed(runner, cli):
     result = runner.invoke(cli, ["set-default", "1inch default token list"])
+    assert result.exit_code != 0
+    assert "No such command 'set-default'" in result.output
 
+
+def test_token_info_displays_tokenlist_name(runner, cli, monkeypatch):
+    class FakeTokenInfo:
+        def model_dump(self, mode="json"):
+            return {
+                "symbol": "TKN",
+                "name": "Token",
+                "chainId": 137,
+                "address": "0x0000000000000000000000000000000000000001",
+                "decimals": 18,
+                "tags": [],
+            }
+
+    class FakeManager:
+        def available_tokenlists(self):
+            return ["Preferred List"]
+
+        def get_token_info_with_tokenlist(self, symbol, tokenlist_name, chain_id, case_insensitive):
+            return "Preferred List", FakeTokenInfo()
+
+    monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
+
+    result = runner.invoke(cli, ["token-info", "TKN"])
     assert result.exit_code == 0
-    assert "1inch" in result.output
+    assert "Token List: Preferred List" in result.output
+
+
+def test_update_warns_when_source_url_missing(runner, cli, monkeypatch):
+    class FakeManager:
+        def available_tokenlists(self):
+            return ["Preferred List"]
+
+        def update_tokenlist(self, tokenlist_name):
+            return None
+
+    monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
+
+    result = runner.invoke(cli, ["update", "Preferred List"])
+    assert result.exit_code == 0
+    assert "does not have a stored source URL and cannot be updated" in result.output
+
+
+def test_update_all_updates_each_list(runner, cli, monkeypatch):
+    updated = []
+
+    class FakeManager:
+        def available_tokenlists(self):
+            return ["Alpha", "Beta"]
+
+        def update_tokenlist(self, tokenlist_name):
+            updated.append(tokenlist_name)
+            return tokenlist_name
+
+    monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
+
+    result = runner.invoke(cli, ["update", "--all"])
+    assert result.exit_code == 0
+    assert updated == ["Alpha", "Beta"]
+    assert "Updated 'Alpha'." in result.output
+    assert "Updated 'Beta'." in result.output

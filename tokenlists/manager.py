@@ -1,10 +1,14 @@
+import warnings
 from collections.abc import Iterator
 from json import JSONDecodeError
 
-import requests
+import httpx
 
 from tokenlists import config
 from tokenlists.typing import ChainId, TokenInfo, TokenList, TokenSymbol
+
+SOURCE_URI_FIELD = "tokenlistsSourceUrl"
+HTTP_TIMEOUT = 30.0
 
 
 class TokenListManager:
@@ -15,80 +19,46 @@ class TokenListManager:
 
         # Load all the ones cached on disk
         self.installed_tokenlists = {}
-        for path in self.cache_folder.glob("*.json"):
-            tokenlist = TokenList.model_validate_json(path.read_text())
+        for path in sorted(self.cache_folder.glob("*.json")):
+            tokenlist = TokenList.model_validate_json(path.read_text(encoding="utf-8"))
             self.installed_tokenlists[tokenlist.name] = tokenlist
 
-        self.default_tokenlist = config.DEFAULT_TOKENLIST
-        if not self.default_tokenlist:
-            # Default might be cached on disk (does not override config)
-            default_tokenlist_cachefile = self.cache_folder.joinpath(".default")
-
-            if default_tokenlist_cachefile.exists():
-                self.default_tokenlist = default_tokenlist_cachefile.read_text()
-
-            elif len(self.installed_tokenlists) > 0:
-                # Not cached on disk, use first installed list
-                self.default_tokenlist = next(iter(self.installed_tokenlists))
+        self.tokenlist_order = self._build_tokenlist_order()
 
     def install_tokenlist(self, uri: str) -> str:
         """
         Install the tokenlist at the given URI, return the name of the installed list
         (for reference purposes)
         """
-        # This supports ENS lists
-        if uri.endswith(".eth"):
-            uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri)
-
-        # Load and store the tokenlist
-        response = requests.get(uri)
-        response.raise_for_status()
-        try:
-            response_json = response.json()
-        except JSONDecodeError as err:
-            raise ValueError(f"Invalid response: {response.text}") from err
-
-        tokenlist = TokenList.model_validate(response_json)
-        self.installed_tokenlists[tokenlist.name] = tokenlist
-
-        # Cache it on disk for later instances
-        self.cache_folder.mkdir(exist_ok=True)
-        token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
-        token_list_file.write_text(tokenlist.model_dump_json())
-
+        tokenlist, source_uri = self._fetch_tokenlist(uri)
+        self._set_source_uri(tokenlist, source_uri)
+        self._cache_tokenlist(tokenlist)
         return tokenlist.name
+
+    def update_tokenlist(self, tokenlist_name: str) -> str | None:
+        tokenlist = self.get_tokenlist(tokenlist_name)
+        source_uri = self._get_source_uri(tokenlist)
+        if not source_uri:
+            return None
+
+        updated_tokenlist, resolved_source_uri = self._fetch_tokenlist(source_uri)
+        self._set_source_uri(updated_tokenlist, resolved_source_uri)
+        self._cache_tokenlist(updated_tokenlist, previous_name=tokenlist_name)
+        return updated_tokenlist.name
 
     def remove_tokenlist(self, tokenlist_name: str) -> None:
         tokenlist = self.installed_tokenlists[tokenlist_name]
-
-        if tokenlist.name == self.default_tokenlist:
-            self.default_tokenlist = ""
 
         token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
         token_list_file.unlink()
 
         del self.installed_tokenlists[tokenlist.name]
-
-    def set_default_tokenlist(self, name: str) -> None:
-        if name not in self.installed_tokenlists:
-            raise ValueError(f"Unknown token list: {name}")
-
-        self.default_tokenlist = name
-
-        # Cache it on disk too
-        self.cache_folder.mkdir(exist_ok=True)
-        self.cache_folder.joinpath(".default").write_text(name)
+        self.tokenlist_order = self._build_tokenlist_order()
 
     def available_tokenlists(self) -> list[str]:
-        return sorted(self.installed_tokenlists)
+        return list(self.tokenlist_order)
 
-    def get_tokenlist(self, token_listname: str | None = None) -> TokenList:
-        if not token_listname:
-            if not self.default_tokenlist:
-                raise ValueError("Default token list has not been set.")
-
-            token_listname = self.default_tokenlist
-
+    def get_tokenlist(self, token_listname: str) -> TokenList:
         if token_listname not in self.installed_tokenlists:
             raise ValueError(f"Unknown token list: {token_listname}")
 
@@ -96,38 +66,158 @@ class TokenListManager:
 
     def get_tokens(
         self,
-        token_listname: str | None = None,  # Use default
-        chain_id: ChainId = 1,  # Ethereum Mainnnet
+        token_listname: str | None = None,
+        chain_id: ChainId | None = None,
     ) -> Iterator[TokenInfo]:
-        tokenlist = self.get_tokenlist(token_listname)
-        return filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+        for tokenlist in self._iter_tokenlists(token_listname):
+            for token in tokenlist.tokens:
+                if chain_id is None or token.chainId == chain_id:
+                    yield token
 
     def get_token_info(
         self,
         symbol: TokenSymbol,
-        token_listname: str | None = None,  # Use default
-        chain_id: ChainId = 1,  # Ethereum Mainnnet
+        token_listname: str | None = None,
+        chain_id: ChainId | None = None,
         case_insensitive: bool = False,
     ) -> TokenInfo:
-        tokenlist = self.get_tokenlist(token_listname)
+        _, token_info = self.get_token_info_with_tokenlist(
+            symbol,
+            token_listname=token_listname,
+            chain_id=chain_id,
+            case_insensitive=case_insensitive,
+        )
+        return token_info
 
-        token_iter = filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
-        token_iter = (
-            filter(lambda t: t.symbol == symbol, token_iter)
-            if case_insensitive
-            else filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
+    def get_token_info_with_tokenlist(
+        self,
+        symbol: TokenSymbol,
+        token_listname: str | None = None,
+        chain_id: ChainId | None = None,
+        case_insensitive: bool = False,
+    ) -> tuple[str, TokenInfo]:
+        for tokenlist in self._iter_tokenlists(token_listname):
+            matching_tokens = self._get_matching_tokens(
+                tokenlist, symbol, chain_id, case_insensitive
+            )
+            if len(matching_tokens) == 0:
+                continue
+
+            if len(matching_tokens) > 1:
+                raise ValueError(
+                    f"Multiple tokens with symbol '{symbol}' found in "
+                    f"'{tokenlist.name}' token list."
+                )
+
+            return tokenlist.name, matching_tokens[0]
+
+        if token_listname:
+            raise ValueError(
+                f"Token with symbol '{symbol}' does not exist within '{token_listname}' token list."
+            )
+
+        raise ValueError(
+            f"Token with symbol '{symbol}' does not exist within installed token lists."
         )
 
-        matching_tokens = list(token_iter)
-        if len(matching_tokens) == 0:
-            raise ValueError(
-                f"Token with symbol '{symbol}' does not exist within '{tokenlist.name}' token list."
-            )
+    def _build_tokenlist_order(self) -> list[str]:
+        installed_names = list(self.installed_tokenlists)
+        configured_order = config.get_tokenlist_order()
+        if configured_order is not None:
+            ordered_names = []
+            for name in configured_order:
+                if name in self.installed_tokenlists and name not in ordered_names:
+                    ordered_names.append(name)
 
-        elif len(matching_tokens) > 1:
-            raise ValueError(
-                f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
-            )
+            ordered_names.extend(name for name in installed_names if name not in ordered_names)
+            return ordered_names
 
-        else:
-            return matching_tokens[0]
+        return self._build_legacy_tokenlist_order(installed_names)
+
+    def _build_legacy_tokenlist_order(self, installed_names: list[str]) -> list[str]:
+        default_tokenlist_cachefile = self.cache_folder.joinpath(".default")
+        if not default_tokenlist_cachefile.exists():
+            return installed_names
+
+        legacy_default = default_tokenlist_cachefile.read_text(encoding="utf-8").strip()
+        warnings.warn(
+            (
+                "The legacy `.default` tokenlist file is deprecated. "
+                "Move your preferred ordering into `[tool.tokenlists].order` in `pyproject.toml`. "
+                "Support for `.default` will be removed in an upcoming version."
+            ),
+            FutureWarning,
+            stacklevel=2,
+        )
+
+        if legacy_default in self.installed_tokenlists:
+            return [legacy_default, *(name for name in installed_names if name != legacy_default)]
+
+        return installed_names
+
+    def _cache_tokenlist(self, tokenlist: TokenList, previous_name: str | None = None) -> None:
+        self.cache_folder.mkdir(exist_ok=True)
+
+        if previous_name and previous_name != tokenlist.name:
+            previous_token_list_file = self.cache_folder.joinpath(f"{previous_name}.json")
+            if previous_token_list_file.exists():
+                previous_token_list_file.unlink()
+            self.installed_tokenlists.pop(previous_name, None)
+
+        self.installed_tokenlists[tokenlist.name] = tokenlist
+        token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
+        token_list_file.write_text(tokenlist.model_dump_json(), encoding="utf-8")
+        self.tokenlist_order = self._build_tokenlist_order()
+
+    def _fetch_tokenlist(self, uri: str) -> tuple[TokenList, str]:
+        resolved_uri = (
+            config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri) if uri.endswith(".eth") else uri
+        )
+
+        response = httpx.get(
+            resolved_uri,
+            follow_redirects=True,
+            timeout=HTTP_TIMEOUT,
+        )
+        response.raise_for_status()
+        try:
+            response_json = response.json()
+        except JSONDecodeError as err:
+            raise ValueError(f"Invalid response: {response.text}") from err
+
+        tokenlist = TokenList.model_validate(response_json)
+        return tokenlist, str(response.url or resolved_uri)
+
+    def _get_source_uri(self, tokenlist: TokenList) -> str | None:
+        source_uri = getattr(tokenlist, SOURCE_URI_FIELD, None)
+        return source_uri if isinstance(source_uri, str) and source_uri else None
+
+    def _set_source_uri(self, tokenlist: TokenList, source_uri: str) -> None:
+        setattr(tokenlist, SOURCE_URI_FIELD, source_uri)
+
+    def _iter_tokenlists(self, token_listname: str | None = None) -> Iterator[TokenList]:
+        if token_listname:
+            yield self.get_tokenlist(token_listname)
+            return
+
+        for name in self.tokenlist_order:
+            yield self.installed_tokenlists[name]
+
+    def _get_matching_tokens(
+        self,
+        tokenlist: TokenList,
+        symbol: TokenSymbol,
+        chain_id: ChainId | None,
+        case_insensitive: bool,
+    ) -> list[TokenInfo]:
+        token_iter = (
+            filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+            if chain_id is not None
+            else iter(tokenlist.tokens)
+        )
+        token_iter = (
+            filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
+            if case_insensitive
+            else filter(lambda t: t.symbol == symbol, token_iter)
+        )
+        return list(token_iter)

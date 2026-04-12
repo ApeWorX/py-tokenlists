@@ -24,13 +24,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
-    - uses: astral-sh/setup-uv@v6
+    - uses: astral-sh/setup-uv@v7
 
     - name: Install Dependencies
-      run: |
-        uv venv
-        source .venv/bin/activate
-        uv pip install . --group docs
+      run: uv sync
+
+    - name: Add venv to PATH
+      run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+      # NOTE: Otherwise the next action nukes the path when it starts
 
     - name: Ape Docs
       uses: apeworx/sphinx-ape@main

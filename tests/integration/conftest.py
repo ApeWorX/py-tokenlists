@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from tokenlists import _cli, config
+from tokenlists import config
+from tokenlists.__main__ import cli as tokenlists_cli
 
 
 @pytest.fixture
@@ -17,4 +18,4 @@ def runner(monkeypatch):
 @pytest.fixture
 def cli(runner):
     # NOTE: Depends on `runner` fixture for config side effects
-    yield _cli.cli
+    yield tokenlists_cli

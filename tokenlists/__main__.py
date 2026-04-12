@@ -4,6 +4,7 @@ import re
 
 import click
 
+from . import config
 from .manager import TokenListManager
 from .typing import TokenSymbol
 
@@ -36,10 +37,23 @@ def _list():
             click.echo(f"- {tokenlist.name} (v{tokenlist.version})")
 
     else:
-        click.echo("WARNING: No tokenlists exist!")
+        click.echo(
+            "WARNING: No tokenlists exist! "
+            "Run `tokenlists suggestions` to browse installable lists."
+        )
 
 
-@cli.command(short_help="Install a new tokenlist")
+@cli.command(short_help="Display suggested tokenlists you can install")
+def suggestions():
+    click.echo("Suggested Token Lists:")
+    click.echo(f"Source: {config.SUGGESTED_TOKENLISTS_SOURCE_URL}")
+    for uri, metadata in config.get_suggested_tokenlists().items():
+        homepage = metadata.get("homepage")
+        suffix = f" [{homepage}]" if homepage else ""
+        click.echo(f"- {metadata['name']}: {uri}{suffix}")
+
+
+@cli.command(short_help="Install a tokenlist from a URI or ENS name")
 @click.argument("uri")
 def install(uri):
     manager = TokenListManager()
@@ -53,22 +67,40 @@ def remove(name):
     manager.remove_tokenlist(name)
 
 
-@cli.command(short_help="Set the default tokenlist")
-@click.argument("name", type=TokenlistChoice())
-def set_default(name):
+@cli.command(short_help="Update installed tokenlists from their stored source URLs")
+@click.argument("name", type=TokenlistChoice(), required=False)
+@click.option("--all", "update_all", default=False, is_flag=True)
+def update(name, update_all):
     manager = TokenListManager()
-    manager.set_default_tokenlist(name)
-    click.echo(f"Default tokenlist is now: '{manager.default_tokenlist}'")
+
+    if not manager.available_tokenlists():
+        raise click.ClickException("No tokenlists available!")
+
+    if update_all == bool(name):
+        raise click.ClickException("Provide either a tokenlist name or `--all`.")
+
+    tokenlist_names = manager.available_tokenlists() if update_all else [name]
+    for tokenlist_name in tokenlist_names:
+        updated_name = manager.update_tokenlist(tokenlist_name)
+        if updated_name is None:
+            click.echo(
+                f"WARNING: Token list '{tokenlist_name}' does not have a stored "
+                "source URL and cannot be updated."
+            )
+        elif updated_name == tokenlist_name:
+            click.echo(f"Updated '{tokenlist_name}'.")
+        else:
+            click.echo(f"Updated '{tokenlist_name}' as '{updated_name}'.")
 
 
 @cli.command(short_help="Display the names and versions of all installed tokenlists")
 @click.option("--search", default="")
 @click.option("--tokenlist-name", type=TokenlistChoice(), default=None)
-@click.option("--chain-id", default=1, type=int)
+@click.option("--chain-id", default=None, type=int)
 def list_tokens(search, tokenlist_name, chain_id):
     manager = TokenListManager()
 
-    if not manager.default_tokenlist:
+    if not manager.available_tokenlists():
         raise click.ClickException("No tokenlists available!")
 
     pattern = re.compile(search or ".*")
@@ -84,15 +116,18 @@ def list_tokens(search, tokenlist_name, chain_id):
 @click.argument("symbol", type=TokenSymbol)
 @click.option("--tokenlist-name", type=TokenlistChoice(), default=None)
 @click.option("--case-insensitive", default=False, is_flag=True)
-@click.option("--chain-id", default=1, type=int)
+@click.option("--chain-id", default=None, type=int)
 def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
     manager = TokenListManager()
 
-    if not manager.default_tokenlist:
+    if not manager.available_tokenlists():
         raise click.ClickException("No tokenlists available!")
 
-    token_info = manager.get_token_info(symbol, tokenlist_name, chain_id, case_insensitive)
+    tokenlist_name, token_info = manager.get_token_info_with_tokenlist(
+        symbol, tokenlist_name, chain_id, case_insensitive
+    )
     token_info = token_info.model_dump(mode="json")
+    token_info["tokenlist_name"] = tokenlist_name
 
     if "tags" not in token_info:
         token_info["tags"] = ""
@@ -101,9 +136,14 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
         """
       Symbol: {symbol}
         Name: {name}
+  Token List: {tokenlist_name}
     Chain ID: {chainId}
      Address: {address}
     Decimals: {decimals}
         Tags: {tags}
     """.format(**token_info)
     )
+
+
+if __name__ == "__main__":
+    cli()
