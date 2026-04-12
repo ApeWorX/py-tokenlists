@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.entry-points.console_scripts]
-tokenlists = "tokenlists._cli:cli"
+tokenlists = "tokenlists.__main__:cli"
 
 [dependency-groups]
 test = [

@@ -103,3 +103,7 @@ def token_info(symbol, tokenlist_name, chain_id, case_insensitive):
         Tags: {tags}
     """.format(**token_info)
     )
+
+
+if __name__ == "__main__":
+    cli()

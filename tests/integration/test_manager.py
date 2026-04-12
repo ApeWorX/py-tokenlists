@@ -46,6 +46,39 @@ order = ["Beta"]
     assert symbols == ["BBB", "AAA"]
 
 
+def test_get_token_info_defaults_to_any_chain(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    _write_tokenlist(
+        cache_path,
+        "Alpha",
+        _token("TKN", "0x0000000000000000000000000000000000000001", chain_id=137),
+    )
+
+    token_info = TokenListManager().get_token_info("TKN")
+    assert token_info.chainId == 137
+
+
+def test_get_tokens_with_chain_id_none_returns_all_chains(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    _write_tokenlist(
+        cache_path,
+        "Alpha",
+        _token("AAA", "0x0000000000000000000000000000000000000001", chain_id=1),
+        _token("BBB", "0x0000000000000000000000000000000000000002", chain_id=10),
+    )
+
+    chain_ids = [token.chainId for token in TokenListManager().get_tokens(chain_id=None)]
+    assert chain_ids == [1, 10]
+
+
 def test_legacy_default_file_warns_and_migrates_order(tmp_path, monkeypatch):
     cache_path = tmp_path.joinpath("cache")
     cache_path.mkdir()
@@ -64,22 +97,22 @@ def test_legacy_default_file_warns_and_migrates_order(tmp_path, monkeypatch):
     assert manager.get_token_info("TKN").address == "0x0000000000000000000000000000000000000002"
 
 
-def _write_tokenlist(cache_path, name, token):
+def _write_tokenlist(cache_path, name, *tokens):
     cache_path.joinpath(f"{name}.json").write_text(
         json.dumps(
             {
                 "name": name,
                 "timestamp": "2024-01-01T00:00:00Z",
                 "version": {"major": 1, "minor": 0, "patch": 0},
-                "tokens": [token],
+                "tokens": list(tokens),
             }
         )
     )
 
 
-def _token(symbol, address):
+def _token(symbol, address, chain_id=1):
     return {
-        "chainId": 1,
+        "chainId": chain_id,
         "address": address,
         "name": symbol,
         "decimals": 18,
