@@ -1,11 +1,12 @@
 import json
+import sys
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover
+else:  # pragma: no cover
     import tomli as tomllib
 
 DEFAULT_CACHE_PATH = Path.home().joinpath(".tokenlists")

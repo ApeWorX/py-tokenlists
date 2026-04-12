@@ -37,7 +37,10 @@ def _list():
             click.echo(f"- {tokenlist.name} (v{tokenlist.version})")
 
     else:
-        click.echo("WARNING: No tokenlists exist! Run `tokenlists suggestions` to browse installable lists.")
+        click.echo(
+            "WARNING: No tokenlists exist! "
+            "Run `tokenlists suggestions` to browse installable lists."
+        )
 
 
 @cli.command(short_help="Display suggested tokenlists you can install")
@@ -81,7 +84,8 @@ def update(name, update_all):
         updated_name = manager.update_tokenlist(tokenlist_name)
         if updated_name is None:
             click.echo(
-                f"WARNING: Token list '{tokenlist_name}' does not have a stored source URL and cannot be updated."
+                f"WARNING: Token list '{tokenlist_name}' does not have a stored "
+                "source URL and cannot be updated."
             )
         elif updated_name == tokenlist_name:
             click.echo(f"Updated '{tokenlist_name}'.")

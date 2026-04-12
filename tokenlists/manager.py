@@ -105,7 +105,8 @@ class TokenListManager:
 
             if len(matching_tokens) > 1:
                 raise ValueError(
-                    f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
+                    f"Multiple tokens with symbol '{symbol}' found in "
+                    f"'{tokenlist.name}' token list."
                 )
 
             return tokenlist.name, matching_tokens[0]
