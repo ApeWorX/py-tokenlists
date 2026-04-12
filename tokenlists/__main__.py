@@ -53,6 +53,31 @@ def remove(name):
     manager.remove_tokenlist(name)
 
 
+@cli.command(short_help="Update installed tokenlists from their stored source URLs")
+@click.argument("name", type=TokenlistChoice(), required=False)
+@click.option("--all", "update_all", default=False, is_flag=True)
+def update(name, update_all):
+    manager = TokenListManager()
+
+    if not manager.available_tokenlists():
+        raise click.ClickException("No tokenlists available!")
+
+    if update_all == bool(name):
+        raise click.ClickException("Provide either a tokenlist name or `--all`.")
+
+    tokenlist_names = manager.available_tokenlists() if update_all else [name]
+    for tokenlist_name in tokenlist_names:
+        updated_name = manager.update_tokenlist(tokenlist_name)
+        if updated_name is None:
+            click.echo(
+                f"WARNING: Token list '{tokenlist_name}' does not have a stored source URL and cannot be updated."
+            )
+        elif updated_name == tokenlist_name:
+            click.echo(f"Updated '{tokenlist_name}'.")
+        else:
+            click.echo(f"Updated '{tokenlist_name}' as '{updated_name}'.")
+
+
 @cli.command(short_help="Display the names and versions of all installed tokenlists")
 @click.option("--search", default="")
 @click.option("--tokenlist-name", type=TokenlistChoice(), default=None)

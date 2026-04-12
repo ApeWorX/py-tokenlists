@@ -7,6 +7,8 @@ import requests
 from tokenlists import config
 from tokenlists.typing import ChainId, TokenInfo, TokenList, TokenSymbol
 
+SOURCE_URI_FIELD = "tokenlistsSourceUrl"
+
 
 class TokenListManager:
     def __init__(self):
@@ -27,28 +29,21 @@ class TokenListManager:
         Install the tokenlist at the given URI, return the name of the installed list
         (for reference purposes)
         """
-        # This supports ENS lists
-        if uri.endswith(".eth"):
-            uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri)
-
-        # Load and store the tokenlist
-        response = requests.get(uri)
-        response.raise_for_status()
-        try:
-            response_json = response.json()
-        except JSONDecodeError as err:
-            raise ValueError(f"Invalid response: {response.text}") from err
-
-        tokenlist = TokenList.model_validate(response_json)
-        self.installed_tokenlists[tokenlist.name] = tokenlist
-        self.tokenlist_order = self._build_tokenlist_order()
-
-        # Cache it on disk for later instances
-        self.cache_folder.mkdir(exist_ok=True)
-        token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
-        token_list_file.write_text(tokenlist.model_dump_json())
-
+        tokenlist, source_uri = self._fetch_tokenlist(uri)
+        self._set_source_uri(tokenlist, source_uri)
+        self._cache_tokenlist(tokenlist)
         return tokenlist.name
+
+    def update_tokenlist(self, tokenlist_name: str) -> str | None:
+        tokenlist = self.get_tokenlist(tokenlist_name)
+        source_uri = self._get_source_uri(tokenlist)
+        if not source_uri:
+            return None
+
+        updated_tokenlist, resolved_source_uri = self._fetch_tokenlist(source_uri)
+        self._set_source_uri(updated_tokenlist, resolved_source_uri)
+        self._cache_tokenlist(updated_tokenlist, previous_name=tokenlist_name)
+        return updated_tokenlist.name
 
     def remove_tokenlist(self, tokenlist_name: str) -> None:
         tokenlist = self.installed_tokenlists[tokenlist_name]
@@ -155,6 +150,40 @@ class TokenListManager:
             return [legacy_default, *(name for name in installed_names if name != legacy_default)]
 
         return installed_names
+
+    def _cache_tokenlist(self, tokenlist: TokenList, previous_name: str | None = None) -> None:
+        self.cache_folder.mkdir(exist_ok=True)
+
+        if previous_name and previous_name != tokenlist.name:
+            previous_token_list_file = self.cache_folder.joinpath(f"{previous_name}.json")
+            if previous_token_list_file.exists():
+                previous_token_list_file.unlink()
+            self.installed_tokenlists.pop(previous_name, None)
+
+        self.installed_tokenlists[tokenlist.name] = tokenlist
+        token_list_file = self.cache_folder.joinpath(f"{tokenlist.name}.json")
+        token_list_file.write_text(tokenlist.model_dump_json())
+        self.tokenlist_order = self._build_tokenlist_order()
+
+    def _fetch_tokenlist(self, uri: str) -> tuple[TokenList, str]:
+        resolved_uri = config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri) if uri.endswith(".eth") else uri
+
+        response = requests.get(resolved_uri)
+        response.raise_for_status()
+        try:
+            response_json = response.json()
+        except JSONDecodeError as err:
+            raise ValueError(f"Invalid response: {response.text}") from err
+
+        tokenlist = TokenList.model_validate(response_json)
+        return tokenlist, str(response.url or resolved_uri)
+
+    def _get_source_uri(self, tokenlist: TokenList) -> str | None:
+        source_uri = getattr(tokenlist, SOURCE_URI_FIELD, None)
+        return source_uri if isinstance(source_uri, str) and source_uri else None
+
+    def _set_source_uri(self, tokenlist: TokenList, source_uri: str) -> None:
+        setattr(tokenlist, SOURCE_URI_FIELD, source_uri)
 
     def _iter_tokenlists(self, token_listname: str | None = None) -> Iterator[TokenList]:
         if token_listname:

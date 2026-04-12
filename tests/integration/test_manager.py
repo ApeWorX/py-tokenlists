@@ -97,7 +97,92 @@ def test_legacy_default_file_warns_and_migrates_order(tmp_path, monkeypatch):
     assert manager.get_token_info("TKN").address == "0x0000000000000000000000000000000000000002"
 
 
-def _write_tokenlist(cache_path, name, *tokens):
+def test_install_persists_resolved_source_url(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    class FakeResponse:
+        text = ""
+        url = "https://example.com/tokenlist.json"
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "name": "Alpha",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [_token("AAA", "0x0000000000000000000000000000000000000001")],
+            }
+
+    monkeypatch.setattr("tokenlists.manager.requests.get", lambda uri: FakeResponse())
+
+    TokenListManager().install_tokenlist("https://example.com/install.json")
+
+    cached = json.loads(cache_path.joinpath("Alpha.json").read_text())
+    assert cached["tokenlistsSourceUrl"] == "https://example.com/tokenlist.json"
+
+
+def test_update_tokenlist_uses_stored_source_url(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    _write_tokenlist(
+        cache_path,
+        "Alpha",
+        _token("AAA", "0x0000000000000000000000000000000000000001"),
+        tokenlistsSourceUrl="https://example.com/tokenlist.json",
+    )
+
+    class FakeResponse:
+        text = ""
+        url = "https://cdn.example.com/tokenlist.json"
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "name": "Alpha",
+                "timestamp": "2024-01-02T00:00:00Z",
+                "version": {"major": 1, "minor": 1, "patch": 0},
+                "tokens": [_token("BBB", "0x0000000000000000000000000000000000000002")],
+            }
+
+    called_uris = []
+
+    def fake_get(uri):
+        called_uris.append(uri)
+        return FakeResponse()
+
+    monkeypatch.setattr("tokenlists.manager.requests.get", fake_get)
+
+    updated_name = TokenListManager().update_tokenlist("Alpha")
+
+    assert updated_name == "Alpha"
+    assert called_uris == ["https://example.com/tokenlist.json"]
+    cached = json.loads(cache_path.joinpath("Alpha.json").read_text())
+    assert cached["version"] == {"major": 1, "minor": 1, "patch": 0}
+    assert cached["tokenlistsSourceUrl"] == "https://cdn.example.com/tokenlist.json"
+
+
+def test_update_tokenlist_without_stored_source_url_returns_none(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    _write_tokenlist(cache_path, "Alpha", _token("AAA", "0x0000000000000000000000000000000000000001"))
+
+    assert TokenListManager().update_tokenlist("Alpha") is None
+
+
+def _write_tokenlist(cache_path, name, *tokens, **extra_data):
     cache_path.joinpath(f"{name}.json").write_text(
         json.dumps(
             {
@@ -105,6 +190,7 @@ def _write_tokenlist(cache_path, name, *tokens):
                 "timestamp": "2024-01-01T00:00:00Z",
                 "version": {"major": 1, "minor": 0, "patch": 0},
                 "tokens": list(tokens),
+                **extra_data,
             }
         )
     )

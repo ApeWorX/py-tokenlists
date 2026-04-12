@@ -76,3 +76,38 @@ def test_token_info_displays_tokenlist_name(runner, cli, monkeypatch):
     result = runner.invoke(cli, ["token-info", "TKN"])
     assert result.exit_code == 0
     assert "Token List: Preferred List" in result.output
+
+
+def test_update_warns_when_source_url_missing(runner, cli, monkeypatch):
+    class FakeManager:
+        def available_tokenlists(self):
+            return ["Preferred List"]
+
+        def update_tokenlist(self, tokenlist_name):
+            return None
+
+    monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
+
+    result = runner.invoke(cli, ["update", "Preferred List"])
+    assert result.exit_code == 0
+    assert "does not have a stored source URL and cannot be updated" in result.output
+
+
+def test_update_all_updates_each_list(runner, cli, monkeypatch):
+    updated = []
+
+    class FakeManager:
+        def available_tokenlists(self):
+            return ["Alpha", "Beta"]
+
+        def update_tokenlist(self, tokenlist_name):
+            updated.append(tokenlist_name)
+            return tokenlist_name
+
+    monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
+
+    result = runner.invoke(cli, ["update", "--all"])
+    assert result.exit_code == 0
+    assert updated == ["Alpha", "Beta"]
+    assert "Updated 'Alpha'." in result.output
+    assert "Updated 'Beta'." in result.output
