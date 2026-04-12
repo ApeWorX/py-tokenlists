@@ -7,10 +7,6 @@
     "name": "CoinGecko",
     "homepage": ""
   },
-  "https://defiprime.com/defiprime.tokenlist.json": {
-    "name": "Defiprime",
-    "homepage": ""
-  },
   "t2crtokens.eth": {
     "name": "Kleros T2CR",
     "homepage": ""

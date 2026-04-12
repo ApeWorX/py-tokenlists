@@ -79,6 +79,23 @@ def test_get_tokens_with_chain_id_none_returns_all_chains(tmp_path, monkeypatch)
     assert chain_ids == [1, 10]
 
 
+def test_get_token_info_supports_base58_addresses(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    _write_tokenlist(
+        cache_path,
+        "Alpha",
+        _token("MICHI", "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp", chain_id=501000101),
+    )
+
+    token_info = TokenListManager().get_token_info("MICHI")
+    assert token_info.address == "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp"
+    assert token_info.chainId == 501000101
+
+
 def test_legacy_default_file_warns_and_migrates_order(tmp_path, monkeypatch):
     cache_path = tmp_path.joinpath("cache")
     cache_path.mkdir()

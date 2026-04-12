@@ -10,6 +10,8 @@ TokenAddress = str
 TokenName = str
 TokenDecimals = int
 TokenSymbol = str
+BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+BASE58_CHARACTERS = set(BASE58_ALPHABET)
 
 
 class BaseModel(_BaseModel):
@@ -96,16 +98,48 @@ class TokenInfo(BaseModel):
         return None
 
     @field_validator("address")
-    def address_must_hex(cls, v: str):
-        if not v.startswith("0x") or set(v) > set("x0123456789abcdefABCDEF") or len(v) % 2 != 0:
+    def address_must_be_supported_format(cls, value: str) -> str:
+        if value.startswith("0x"):
+            return cls._validate_hex_address(value)
+
+        if cls._is_base58_address(value):
+            return value
+
+        raise ValueError("Address is not a supported hex or base58 value")
+
+    @classmethod
+    def _validate_hex_address(cls, value: str) -> str:
+        if set(value) > set("x0123456789abcdefABCDEF") or len(value) % 2 != 0:
             raise ValueError("Address is not hex")
 
-        address_bytes = bytes.fromhex(v[2:])  # NOTE: Skip `0x`
-
+        address_bytes = bytes.fromhex(value[2:])  # NOTE: Skip `0x`
         if len(address_bytes) != 20:
             raise ValueError("Address is incorrect length")
 
-        return v
+        return value
+
+    @classmethod
+    def _is_base58_address(cls, value: str) -> bool:
+        if not value or set(value) - BASE58_CHARACTERS:
+            return False
+
+        decoded_length = len(cls._decode_base58(value))
+        return 1 <= decoded_length <= 64
+
+    @classmethod
+    def _decode_base58(cls, value: str) -> bytes:
+        integer = 0
+        for character in value:
+            integer = integer * 58 + BASE58_ALPHABET.index(character)
+
+        decoded = bytearray()
+        while integer > 0:
+            integer, remainder = divmod(integer, 256)
+            decoded.append(remainder)
+
+        decoded.reverse()
+        leading_zeroes = len(value) - len(value.lstrip("1"))
+        return (b"\x00" * leading_zeroes) + bytes(decoded)
 
     @field_validator("decimals")
     def decimals_must_be_uint8(cls, v: TokenDecimals):
