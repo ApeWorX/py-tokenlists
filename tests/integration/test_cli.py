@@ -14,6 +14,15 @@ def test_empty_list(runner, cli):
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0
     assert "No tokenlists exist" in result.output
+    assert "tokenlists suggestions" in result.output
+
+
+def test_suggestions(runner, cli):
+    result = runner.invoke(cli, ["suggestions"])
+    assert result.exit_code == 0
+    assert "Suggested Token Lists:" in result.output
+    assert "Uniswap Default List" in result.output
+    assert "https://ipfs.io/ipns/tokens.uniswap.org" in result.output
 
 
 def test_install(runner, cli):

@@ -1,3 +1,5 @@
+import json
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +11,9 @@ except ModuleNotFoundError:  # pragma: no cover
 DEFAULT_CACHE_PATH = Path.home().joinpath(".tokenlists")
 
 UNISWAP_ENS_TOKENLISTS_HOST = "https://wispy-bird-88a7.uniswap.workers.dev/?url=http://{}.link"
+SUGGESTED_TOKENLISTS_SOURCE_URL = (
+    "https://raw.githubusercontent.com/Uniswap/tokenlists-org/master/src/token-lists.json"
+)
 
 
 def get_local_tokenlists_config() -> dict[str, Any] | None:
@@ -37,6 +42,11 @@ def get_tokenlist_order() -> list[str] | None:
         )
 
     return order
+
+
+def get_suggested_tokenlists() -> dict[str, dict[str, str]]:
+    suggested_tokenlists = resources.files("tokenlists").joinpath("suggested.json")
+    return json.loads(suggested_tokenlists.read_text())
 
 
 def _find_local_pyproject_path() -> Path | None:

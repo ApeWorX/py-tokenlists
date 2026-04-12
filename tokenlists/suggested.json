@@ -1,0 +1,26 @@
+{
+  "tokens.1inch.eth": {
+    "name": "1inch",
+    "homepage": ""
+  },
+  "https://tokens.coingecko.com/uniswap/all.json": {
+    "name": "CoinGecko",
+    "homepage": ""
+  },
+  "https://defiprime.com/defiprime.tokenlist.json": {
+    "name": "Defiprime",
+    "homepage": ""
+  },
+  "t2crtokens.eth": {
+    "name": "Kleros T2CR",
+    "homepage": ""
+  },
+  "https://static.optimism.io/optimism.tokenlist.json": {
+    "name": "Optimism",
+    "homepage": "https://optimism.io/"
+  },
+  "https://ipfs.io/ipns/tokens.uniswap.org": {
+    "name": "Uniswap Default List",
+    "homepage": ""
+  }
+}

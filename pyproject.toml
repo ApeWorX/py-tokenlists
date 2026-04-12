@@ -76,6 +76,9 @@ dev = [
 packages = ["tokenlists"]
 include-package-data = true
 
+[tool.setuptools.package-data]
+tokenlists = ["suggested.json"]
+
 [tool.setuptools_scm]
 write_to = "tokenlists/version.py"
 

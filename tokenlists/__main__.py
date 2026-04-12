@@ -4,6 +4,7 @@ import re
 
 import click
 
+from . import config
 from .manager import TokenListManager
 from .typing import TokenSymbol
 
@@ -36,10 +37,20 @@ def _list():
             click.echo(f"- {tokenlist.name} (v{tokenlist.version})")
 
     else:
-        click.echo("WARNING: No tokenlists exist!")
+        click.echo("WARNING: No tokenlists exist! Run `tokenlists suggestions` to browse installable lists.")
 
 
-@cli.command(short_help="Install a new tokenlist")
+@cli.command(short_help="Display suggested tokenlists you can install")
+def suggestions():
+    click.echo("Suggested Token Lists:")
+    click.echo(f"Source: {config.SUGGESTED_TOKENLISTS_SOURCE_URL}")
+    for uri, metadata in config.get_suggested_tokenlists().items():
+        homepage = metadata.get("homepage")
+        suffix = f" [{homepage}]" if homepage else ""
+        click.echo(f"- {metadata['name']}: {uri}{suffix}")
+
+
+@cli.command(short_help="Install a tokenlist from a URI or ENS name")
 @click.argument("uri")
 def install(uri):
     manager = TokenListManager()
