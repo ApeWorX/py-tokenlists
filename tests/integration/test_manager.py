@@ -256,6 +256,31 @@ def test_install_writes_utf8_cache_file(tmp_path, monkeypatch):
     assert "A\u0361LPHA" in cached
 
 
+def test_install_from_local_file_path(tmp_path, monkeypatch):
+    cache_path = tmp_path.joinpath("cache")
+    cache_path.mkdir()
+    monkeypatch.setattr(config, "DEFAULT_CACHE_PATH", cache_path)
+    monkeypatch.chdir(tmp_path)
+
+    source_path = tmp_path.joinpath("local-tokenlist.json")
+    source_path.write_text(
+        json.dumps(
+            {
+                "name": "Local List",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [_token("AAA", "0x0000000000000000000000000000000000000001")],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    TokenListManager().install_tokenlist(str(source_path))
+
+    cached = json.loads(cache_path.joinpath("Local List.json").read_text())
+    assert cached["tokenlistsSourceUrl"] == str(source_path.resolve())
+
+
 def _write_tokenlist(cache_path, name, *tokens, **extra_data):
     cache_path.joinpath(f"{name}.json").write_text(
         json.dumps(

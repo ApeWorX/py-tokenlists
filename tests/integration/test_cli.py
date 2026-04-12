@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from tokenlists import __main__ as cli_module
 from tokenlists.version import version
 
@@ -36,6 +39,100 @@ def test_install(runner, cli):
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0
     assert "1inch" in result.output
+
+
+def test_new_writes_empty_tokenlist_to_selected_path(runner, cli):
+    result = runner.invoke(
+        cli,
+        [
+            "new",
+            "custom/tokenlist.json",
+            "--name",
+            "My Token List",
+            "--keyword",
+            "stablecoin",
+            "--keyword",
+            "dex",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "custom/tokenlist.json" in result.output
+
+    written = json.loads(Path("custom/tokenlist.json").read_text(encoding="utf-8"))
+    assert written["name"] == "My Token List"
+    assert written["tokens"] == []
+    assert written["version"] == {"major": 1, "minor": 0, "patch": 0}
+    assert written["keywords"] == ["stablecoin", "dex"]
+
+
+def test_add_updates_local_tokenlist_and_bumps_minor_version(runner, cli):
+    Path("tokenlist.json").write_text(
+        json.dumps(
+            {
+                "name": "My Token List",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        cli,
+        [
+            "add",
+            "tokenlist.json",
+            "--chain-id",
+            "1",
+            "--address",
+            "0x0000000000000000000000000000000000000001",
+            "--name",
+            "Token",
+            "--symbol",
+            "TKN",
+            "--decimals",
+            "18",
+            "--tag",
+            "stablecoin",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "v1.1.0" in result.output
+
+    written = json.loads(Path("tokenlist.json").read_text(encoding="utf-8"))
+    assert written["version"] == {"major": 1, "minor": 1, "patch": 0}
+    assert written["tokens"][0]["symbol"] == "TKN"
+    assert written["tokens"][0]["tags"] == ["stablecoin"]
+
+
+def test_install_from_local_path(runner, cli):
+    Path("tokenlist.json").write_text(
+        json.dumps(
+            {
+                "name": "Local List",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [
+                    {
+                        "chainId": 1,
+                        "address": "0x0000000000000000000000000000000000000001",
+                        "name": "Token",
+                        "decimals": 18,
+                        "symbol": "TKN",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(cli, ["install", "tokenlist.json"])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(cli, ["list"])
+    assert result.exit_code == 0
+    assert "Local List" in result.output
 
 
 def test_remove(runner, cli):

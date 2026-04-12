@@ -1,4 +1,6 @@
 from itertools import chain
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from pydantic import AnyUrl, ConfigDict, PastDatetime, field_validator
@@ -229,3 +231,55 @@ class TokenList(BaseModel):
             data["timestamp"] = self.timestamp.isoformat()
 
         return data
+
+    @classmethod
+    def create_empty(
+        cls,
+        name: str,
+        logo_uri: str | None = None,
+        keywords: list[str] | None = None,
+    ) -> "TokenList":
+        return cls(
+            name=name,
+            timestamp=cls._authoring_timestamp(),
+            version=TokenListVersion(major=1, minor=0, patch=0),
+            tokens=[],
+            keywords=keywords or None,
+            logoURI=logo_uri or None,
+        )
+
+    @classmethod
+    def load(cls, path: str | Path) -> "TokenList":
+        return cls.model_validate_json(Path(path).read_text(encoding="utf-8"))
+
+    def save(self, path: str | Path) -> Path:
+        tokenlist_path = Path(path)
+        tokenlist_path.parent.mkdir(parents=True, exist_ok=True)
+        tokenlist_path.write_text(self.model_dump_json(indent=2), encoding="utf-8")
+        return tokenlist_path
+
+    def add_token(self, token_info: TokenInfo) -> "TokenList":
+        if any(
+            token.chainId == token_info.chainId and token.address == token_info.address
+            for token in self.tokens
+        ):
+            raise ValueError(
+                f"Token at {token_info.address} on chain {token_info.chainId} already exists."
+            )
+
+        return self.model_validate(
+            {
+                **self.model_dump(),
+                "tokens": [*self.tokens, token_info],
+                "timestamp": self._authoring_timestamp(),
+                "version": self._increment_minor_version(self.version),
+            }
+        )
+
+    @staticmethod
+    def _increment_minor_version(version: TokenListVersion) -> TokenListVersion:
+        return TokenListVersion(major=version.major, minor=version.minor + 1, patch=0)
+
+    @staticmethod
+    def _authoring_timestamp() -> datetime:
+        return datetime.now(timezone.utc) - timedelta(seconds=1)

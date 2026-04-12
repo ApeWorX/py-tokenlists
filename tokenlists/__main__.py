@@ -1,12 +1,13 @@
 # TODO: Seems like Click 8.1.5 introduced this
 # mypy: disable-error-code=attr-defined
 import re
+from pathlib import Path
 
 import click
 
 from . import config
 from .manager import TokenListManager
-from .typing import TokenSymbol
+from .typing import TokenInfo, TokenList, TokenSymbol
 
 
 class TokenlistChoice(click.Choice):
@@ -53,11 +54,57 @@ def suggestions():
         click.echo(f"- {metadata['name']}: {uri}{suffix}")
 
 
-@cli.command(short_help="Install a tokenlist from a URI or ENS name")
+@cli.command(short_help="Install a tokenlist from a URI, ENS name, or local JSON file")
 @click.argument("uri")
 def install(uri):
     manager = TokenListManager()
     manager.install_tokenlist(uri)
+
+
+@cli.command(short_help="Create a new local tokenlist JSON file")
+@click.argument("path", required=False, type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--name", default=None)
+@click.option("--logo-uri", default=None)
+@click.option("--keyword", "keywords", multiple=True)
+def new(path, name, logo_uri, keywords):
+    path = path or Path(click.prompt("Output path", default="./tokenlist.json"))
+    if path.exists() and not click.confirm(f"{path} already exists. Overwrite it?"):
+        raise click.ClickException("Aborted.")
+
+    name = name or click.prompt("Token list name")
+    keywords = list(keywords) or None
+
+    tokenlist = TokenList.create_empty(name=name, logo_uri=logo_uri, keywords=keywords)
+    tokenlist.save(path)
+    click.echo(f"Wrote empty tokenlist to {path}.")
+
+
+@cli.command(short_help="Add a token to an existing local tokenlist JSON file")
+@click.argument("path", required=False, type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--chain-id", type=int, default=None)
+@click.option("--address", default=None)
+@click.option("--name", default=None)
+@click.option("--symbol", default=None)
+@click.option("--decimals", type=int, default=None)
+@click.option("--logo-uri", default=None)
+@click.option("--tag", "tags", multiple=True)
+def add(path, chain_id, address, name, symbol, decimals, logo_uri, tags):
+    path = path or Path(click.prompt("Tokenlist path", default="./tokenlist.json"))
+    tokenlist = TokenList.load(path)
+
+    token_info = TokenInfo(
+        chainId=chain_id if chain_id is not None else click.prompt("Chain ID", type=int),
+        address=address or click.prompt("Token address"),
+        name=name or click.prompt("Token name"),
+        symbol=symbol or click.prompt("Token symbol"),
+        decimals=decimals if decimals is not None else click.prompt("Token decimals", type=int),
+        logoURI=logo_uri,
+        tags=list(tags) or None,
+    )
+
+    updated_tokenlist = tokenlist.add_token(token_info)
+    updated_tokenlist.save(path)
+    click.echo(f"Added {token_info.symbol} to {path} (v{updated_tokenlist.version}).")
 
 
 @cli.command(short_help="Remove an existing tokenlist")
