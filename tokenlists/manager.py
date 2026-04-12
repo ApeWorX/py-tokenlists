@@ -71,20 +71,35 @@ class TokenListManager:
     def get_tokens(
         self,
         token_listname: str | None = None,
-        chain_id: ChainId = 1,  # Ethereum Mainnnet
+        chain_id: ChainId | None = None,
     ) -> Iterator[TokenInfo]:
         for tokenlist in self._iter_tokenlists(token_listname):
             for token in tokenlist.tokens:
-                if token.chainId == chain_id:
+                if chain_id is None or token.chainId == chain_id:
                     yield token
 
     def get_token_info(
         self,
         symbol: TokenSymbol,
         token_listname: str | None = None,
-        chain_id: ChainId = 1,  # Ethereum Mainnnet
+        chain_id: ChainId | None = None,
         case_insensitive: bool = False,
     ) -> TokenInfo:
+        _, token_info = self.get_token_info_with_tokenlist(
+            symbol,
+            token_listname=token_listname,
+            chain_id=chain_id,
+            case_insensitive=case_insensitive,
+        )
+        return token_info
+
+    def get_token_info_with_tokenlist(
+        self,
+        symbol: TokenSymbol,
+        token_listname: str | None = None,
+        chain_id: ChainId | None = None,
+        case_insensitive: bool = False,
+    ) -> tuple[str, TokenInfo]:
         for tokenlist in self._iter_tokenlists(token_listname):
             matching_tokens = self._get_matching_tokens(
                 tokenlist, symbol, chain_id, case_insensitive
@@ -97,7 +112,7 @@ class TokenListManager:
                     f"Multiple tokens with symbol '{symbol}' found in '{tokenlist.name}' token list."
                 )
 
-            return matching_tokens[0]
+            return tokenlist.name, matching_tokens[0]
 
         if token_listname:
             raise ValueError(
@@ -153,10 +168,14 @@ class TokenListManager:
         self,
         tokenlist: TokenList,
         symbol: TokenSymbol,
-        chain_id: ChainId,
+        chain_id: ChainId | None,
         case_insensitive: bool,
     ) -> list[TokenInfo]:
-        token_iter = filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+        token_iter = (
+            filter(lambda t: t.chainId == chain_id, tokenlist.tokens)
+            if chain_id is not None
+            else iter(tokenlist.tokens)
+        )
         token_iter = (
             filter(lambda t: t.symbol.lower() == symbol.lower(), token_iter)
             if case_insensitive
