@@ -57,7 +57,7 @@ def test_new_writes_empty_tokenlist_to_selected_path(runner, cli):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert "custom/tokenlist.json" in result.output
+    assert Path("custom/tokenlist.json").as_posix() in result.output.replace("\\", "/")
 
     written = json.loads(Path("custom/tokenlist.json").read_text(encoding="utf-8"))
     assert written["name"] == "My Token List"
