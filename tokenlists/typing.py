@@ -1,7 +1,7 @@
-from itertools import chain
 from datetime import datetime, timedelta, timezone
+from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AnyUrl, ConfigDict, PastDatetime, field_validator
 from pydantic import BaseModel as _BaseModel
@@ -272,13 +272,30 @@ class TokenList(BaseModel):
                 **self.model_dump(),
                 "tokens": [*self.tokens, token_info],
                 "timestamp": self._authoring_timestamp(),
-                "version": self._increment_minor_version(self.version),
             }
         )
 
-    @staticmethod
-    def _increment_minor_version(version: TokenListVersion) -> TokenListVersion:
-        return TokenListVersion(major=version.major, minor=version.minor + 1, patch=0)
+    def bump_version(self, part: Literal["major", "minor", "patch"] = "patch") -> "TokenList":
+        new_version = self.version.model_copy(deep=True)
+
+        match part:
+            case "major":
+                new_version.major += 1
+                new_version.minor = 0
+                new_version.patch = 0
+            case "minor":
+                new_version.minor += 1
+                new_version.patch = 0
+            case "patch":
+                new_version.patch += 1
+
+        return self.model_validate(
+            {
+                **self.model_dump(),
+                "timestamp": self._authoring_timestamp(),
+                "version": new_version,
+            }
+        )
 
     @staticmethod
     def _authoring_timestamp() -> datetime:
