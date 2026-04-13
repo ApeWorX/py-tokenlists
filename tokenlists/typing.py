@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta, timezone
 from itertools import chain
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 from pydantic import AnyUrl, ConfigDict, PastDatetime, field_validator
 from pydantic import BaseModel as _BaseModel
@@ -229,3 +231,72 @@ class TokenList(BaseModel):
             data["timestamp"] = self.timestamp.isoformat()
 
         return data
+
+    @classmethod
+    def create_empty(
+        cls,
+        name: str,
+        logo_uri: str | None = None,
+        keywords: list[str] | None = None,
+    ) -> "TokenList":
+        return cls(
+            name=name,
+            timestamp=cls._authoring_timestamp(),
+            version=TokenListVersion(major=1, minor=0, patch=0),
+            tokens=[],
+            keywords=keywords or None,
+            logoURI=logo_uri or None,
+        )
+
+    @classmethod
+    def load(cls, path: str | Path) -> "TokenList":
+        return cls.model_validate_json(Path(path).read_text(encoding="utf-8"))
+
+    def save(self, path: str | Path) -> Path:
+        tokenlist_path = Path(path)
+        tokenlist_path.parent.mkdir(parents=True, exist_ok=True)
+        tokenlist_path.write_text(self.model_dump_json(indent=2), encoding="utf-8")
+        return tokenlist_path
+
+    def add_token(self, token_info: TokenInfo) -> "TokenList":
+        if any(
+            token.chainId == token_info.chainId and token.address == token_info.address
+            for token in self.tokens
+        ):
+            raise ValueError(
+                f"Token at {token_info.address} on chain {token_info.chainId} already exists."
+            )
+
+        return self.model_validate(
+            {
+                **self.model_dump(),
+                "tokens": [*self.tokens, token_info],
+                "timestamp": self._authoring_timestamp(),
+            }
+        )
+
+    def bump_version(self, part: Literal["major", "minor", "patch"] = "patch") -> "TokenList":
+        new_version = self.version.model_copy(deep=True)
+
+        match part:
+            case "major":
+                new_version.major += 1
+                new_version.minor = 0
+                new_version.patch = 0
+            case "minor":
+                new_version.minor += 1
+                new_version.patch = 0
+            case "patch":
+                new_version.patch += 1
+
+        return self.model_validate(
+            {
+                **self.model_dump(),
+                "timestamp": self._authoring_timestamp(),
+                "version": new_version,
+            }
+        )
+
+    @staticmethod
+    def _authoring_timestamp() -> datetime:
+        return datetime.now(timezone.utc) - timedelta(seconds=1)

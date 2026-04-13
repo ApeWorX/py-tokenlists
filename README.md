@@ -40,6 +40,18 @@ python3 setup.py install
 ['1inch']
 ```
 
+You can also author and test your own token list locally before publishing it:
+
+```bash
+tokenlists new ./tokenlist.json --name "My Token List" --keyword defi --keyword dex
+tokenlists add ./tokenlist.json --chain-id 1 --address 0x0000000000000000000000000000000000000001 --name "Token" --symbol TKN --decimals 18 --tag stablecoin
+tokenlists install ./tokenlist.json
+```
+
+If you omit required options from `tokenlists new` or `tokenlists add`, the CLI will prompt for the missing values. When a token is added to a list, the list timestamp is refreshed and the semantic version is bumped from `major.minor.patch` to the next minor version, following the token list update rules for additive changes.
+
+Publishing is simply serving the generated JSON somewhere reachable by your users. Once hosted, install and verify it with `tokenlists install <url>`.
+
 Token lookup order is controlled locally through `pyproject.toml`:
 
 ```toml

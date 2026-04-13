@@ -7,10 +7,6 @@
     "name": "CoinGecko",
     "homepage": ""
   },
-  "t2crtokens.eth": {
-    "name": "Kleros T2CR",
-    "homepage": ""
-  },
   "https://static.optimism.io/optimism.tokenlist.json": {
     "name": "Optimism",
     "homepage": "https://optimism.io/"

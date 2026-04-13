@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from tokenlists import __main__ as cli_module
 from tokenlists.version import version
 
@@ -11,14 +14,14 @@ def test_version(runner, cli):
 
 
 def test_empty_list(runner, cli):
-    result = runner.invoke(cli, ["list"])
+    result = runner.invoke(cli, ["cache", "list"])
     assert result.exit_code == 0
     assert "No tokenlists exist" in result.output
     assert "tokenlists suggestions" in result.output
 
 
 def test_suggestions(runner, cli):
-    result = runner.invoke(cli, ["suggestions"])
+    result = runner.invoke(cli, ["cache", "list", "--suggested"])
     assert result.exit_code == 0
     assert "Suggested Token Lists:" in result.output
     assert "Uniswap Default List" in result.output
@@ -26,31 +29,127 @@ def test_suggestions(runner, cli):
 
 
 def test_install(runner, cli):
-    result = runner.invoke(cli, ["list"])
+    result = runner.invoke(cli, ["cache", "list"])
     assert result.exit_code == 0
     assert "No tokenlists exist" in result.output
 
-    result = runner.invoke(cli, ["install", TEST_URI])
+    result = runner.invoke(cli, ["cache", "add", TEST_URI])
     assert result.exit_code == 0, result.output
 
-    result = runner.invoke(cli, ["list"])
+    result = runner.invoke(cli, ["cache", "list"])
     assert result.exit_code == 0
     assert "1inch" in result.output
+
+
+def test_new_writes_empty_tokenlist_to_selected_path(runner, cli):
+    result = runner.invoke(
+        cli,
+        [
+            "manage",
+            "new",
+            "custom/tokenlist.json",
+            "--name",
+            "My Token List",
+            "--keyword",
+            "stablecoin",
+            "--keyword",
+            "dex",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert Path("custom/tokenlist.json").as_posix() in result.output.replace("\\", "/")
+
+    written = json.loads(Path("custom/tokenlist.json").read_text(encoding="utf-8"))
+    assert written["name"] == "My Token List"
+    assert written["tokens"] == []
+    assert written["version"] == {"major": 1, "minor": 0, "patch": 0}
+    assert written["keywords"] == ["stablecoin", "dex"]
+
+
+def test_add_updates_local_tokenlist(runner, cli):
+    Path("tokenlist.json").write_text(
+        json.dumps(
+            {
+                "name": "My Token List",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        cli,
+        [
+            "manage",
+            "add",
+            "tokenlist.json",
+            "--chain-id",
+            "1",
+            "--address",
+            "0x0000000000000000000000000000000000000001",
+            "--name",
+            "Token",
+            "--symbol",
+            "TKN",
+            "--decimals",
+            "18",
+            "--tag",
+            "stablecoin",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "v1.0.0" in result.output
+
+    written = json.loads(Path("tokenlist.json").read_text(encoding="utf-8"))
+    assert written["version"] == {"major": 1, "minor": 0, "patch": 0}
+    assert written["tokens"][0]["symbol"] == "TKN"
+    assert written["tokens"][0]["tags"] == ["stablecoin"]
+
+
+def test_install_from_local_path(runner, cli):
+    Path("tokenlist.json").write_text(
+        json.dumps(
+            {
+                "name": "Local List",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "version": {"major": 1, "minor": 0, "patch": 0},
+                "tokens": [
+                    {
+                        "chainId": 1,
+                        "address": "0x0000000000000000000000000000000000000001",
+                        "name": "Token",
+                        "decimals": 18,
+                        "symbol": "TKN",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(cli, ["cache", "add", "tokenlist.json"])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(cli, ["cache", "list"])
+    assert result.exit_code == 0
+    assert "Local List" in result.output
 
 
 def test_remove(runner, cli):
-    result = runner.invoke(cli, ["install", TEST_URI])
+    result = runner.invoke(cli, ["cache", "add", TEST_URI])
     assert result.exit_code == 0
 
-    result = runner.invoke(cli, ["list"])
+    result = runner.invoke(cli, ["cache", "list"])
     assert result.exit_code == 0
     assert "1inch" in result.output
 
-    result = runner.invoke(cli, ["remove", "1inch default token list"])
+    result = runner.invoke(cli, ["cache", "clear", "1inch default token list"])
     assert result.exit_code == 0
     assert result.exit_code == 0
 
-    result = runner.invoke(cli, ["list"])
+    result = runner.invoke(cli, ["cache", "list"])
     assert result.exit_code == 0
     assert "No tokenlists exist" in result.output
 
@@ -82,7 +181,7 @@ def test_token_info_displays_tokenlist_name(runner, cli, monkeypatch):
 
     monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
 
-    result = runner.invoke(cli, ["token-info", "TKN"])
+    result = runner.invoke(cli, ["info", "TKN"])
     assert result.exit_code == 0
     assert "Token List: Preferred List" in result.output
 
@@ -97,7 +196,7 @@ def test_update_warns_when_source_url_missing(runner, cli, monkeypatch):
 
     monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
 
-    result = runner.invoke(cli, ["update", "Preferred List"])
+    result = runner.invoke(cli, ["cache", "refresh", "Preferred List"])
     assert result.exit_code == 0
     assert "does not have a stored source URL and cannot be updated" in result.output
 
@@ -115,7 +214,7 @@ def test_update_all_updates_each_list(runner, cli, monkeypatch):
 
     monkeypatch.setattr(cli_module, "TokenListManager", FakeManager)
 
-    result = runner.invoke(cli, ["update", "--all"])
+    result = runner.invoke(cli, ["cache", "refresh", "--all"])
     assert result.exit_code == 0
     assert updated == ["Alpha", "Beta"]
     assert "Updated 'Alpha'." in result.output

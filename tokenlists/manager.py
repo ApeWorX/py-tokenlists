@@ -1,6 +1,7 @@
 import warnings
 from collections.abc import Iterator
 from json import JSONDecodeError
+from pathlib import Path
 
 import httpx
 
@@ -170,6 +171,11 @@ class TokenListManager:
         self.tokenlist_order = self._build_tokenlist_order()
 
     def _fetch_tokenlist(self, uri: str) -> tuple[TokenList, str]:
+        local_path = Path(uri).expanduser()
+        if local_path.is_file():
+            tokenlist = TokenList.model_validate_json(local_path.read_text(encoding="utf-8"))
+            return tokenlist, str(local_path.resolve())
+
         resolved_uri = (
             config.UNISWAP_ENS_TOKENLISTS_HOST.format(uri) if uri.endswith(".eth") else uri
         )
