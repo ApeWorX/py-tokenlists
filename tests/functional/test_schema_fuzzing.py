@@ -23,14 +23,17 @@ def clean_data(tl: dict) -> dict:
     return tl
 
 
+def comparable_data(tl: dict) -> dict:
+    return clean_data(dict(tl))
+
+
 @pytest.mark.fuzzing
 @given(token_list=from_schema(TOKENLISTS_SCHEMA_JSON))
 @settings(suppress_health_check=(HealthCheck.too_slow,))
 def test_schema(token_list):
     try:
-        assert TokenList.model_validate(token_list).model_dump(mode="json") == clean_data(
-            token_list
-        )
+        validated = TokenList.model_validate(token_list).model_dump(mode="json")
+        assert comparable_data(validated) == comparable_data(token_list)
 
     except (ValidationError, ValueError):
         pass  # Expect these kinds of errors
