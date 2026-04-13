@@ -186,6 +186,14 @@ data-aria-dark="Switch to auto color mode">
 </span><span data-line="9"><span class="go">[&#39;1inch&#39;]</span>
 </span></pre></div>
 </div>
+<p>You can also author and test your own token list locally before publishing it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">tokenlists<span class="w"> </span>new<span class="w"> </span>./tokenlist.json<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;My Token List&quot;</span><span class="w"> </span>--keyword<span class="w"> </span>defi<span class="w"> </span>--keyword<span class="w"> </span>dex
+</span><span data-line="2">tokenlists<span class="w"> </span>add<span class="w"> </span>./tokenlist.json<span class="w"> </span>--chain-id<span class="w"> </span><span class="m">1</span><span class="w"> </span>--address<span class="w"> </span>0x0000000000000000000000000000000000000001<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;Token&quot;</span><span class="w"> </span>--symbol<span class="w"> </span>TKN<span class="w"> </span>--decimals<span class="w"> </span><span class="m">18</span><span class="w"> </span>--tag<span class="w"> </span>stablecoin
+</span><span data-line="3">tokenlists<span class="w"> </span>install<span class="w"> </span>./tokenlist.json
+</span></pre></div>
+</div>
+<p>If you omit required options from <code class="docutils literal notranslate"><span class="pre">tokenlists</span> <span class="pre">new</span></code> or <code class="docutils literal notranslate"><span class="pre">tokenlists</span> <span class="pre">add</span></code>, the CLI will prompt for the missing values. When a token is added to a list, the list timestamp is refreshed and the semantic version is bumped from <code class="docutils literal notranslate"><span class="pre">major.minor.patch</span></code> to the next minor version, following the token list update rules for additive changes.</p>
+<p>Publishing is simply serving the generated JSON somewhere reachable by your users. Once hosted, install and verify it with <code class="docutils literal notranslate"><span class="pre">tokenlists</span> <span class="pre">install</span> <span class="pre">&lt;url&gt;</span></code>.</p>
 <p>Token lookup order is controlled locally through <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="k">[tool.tokenlists]</span>
 </span><span data-line="2"><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;My Preferred List&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Fallback List&quot;</span><span class="p">]</span>
